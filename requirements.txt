@@ -1,3 +1,4 @@
+numpy==1.21.3
 taichi==0.8.4
 taichi_glsl==0.0.11
 typer==0.4.0

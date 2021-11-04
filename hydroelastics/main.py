@@ -14,6 +14,14 @@ def julia_set():
 
 
 @app.command()
+def cloth():
+    """Runs a simple cloth simulation based on linked springs."""
+    from .cloth import run
+
+    run()
+
+
+@app.command()
 def spring_pendulum():
     """Runs a simple spring-pendulum physics simulation."""
     raise NotImplementedError()
