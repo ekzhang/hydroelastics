@@ -26,3 +26,5 @@ jobs:
       - run: just install
 
       - run: just check
+
+      - run: just run --help

@@ -18,13 +18,13 @@ Then, run the following command to install Python dependencies, including the Ta
 just install
 ```
 
-To run the code in `main.py`, use the command:
+To run a top-level Python entry point in `main.py`, use the command:
 
 ```bash
-just run
+just run [COMMAND]
 ```
 
-We will provide a command-line interface with options in the future.
+You can use `just run --help` to display a list of runnable commands. Each program may take appropriate command-line arguments (parsed via [Typer](https://typer.tiangolo.com/)) to customize their behavior.
 
 ## Development
 
