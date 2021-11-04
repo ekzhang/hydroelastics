@@ -57,11 +57,15 @@ def apply_spring_force():
 
 @ti.kernel
 def advance(t: float):
-    """Advance the simulation by `t` units of time using Euler's method."""
+    """Advance the simulation by `t` units of time."""
     for i, j in pos:
         if i != 0 or (j != 0 and j != m - 1):
-            pos[i, j] += t * vel[i, j]
-            vel[i, j] += t * forces[i, j]
+            # This is not a typo! Updating v first is more stable; it is the symplectic Euler method.
+            # https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
+            dv = t * forces[i, j]
+            v = vel[i, j] + dv
+            vel[i, j] += dv
+            pos[i, j] += t * v
 
 
 def run():
@@ -92,6 +96,6 @@ def run():
         )
         gui.show()
 
-        for _ in range(20):
+        for _ in range(5):
             apply_spring_force()
-            advance(1e-4)
+            advance(1e-3)
