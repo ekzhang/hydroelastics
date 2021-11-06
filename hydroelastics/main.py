@@ -25,7 +25,7 @@ def cloth():
 def spring_pendulum():
     """Runs a simple spring-pendulum physics simulation."""
     from .spring_pendulum import run
-    
+
     run()
 
 

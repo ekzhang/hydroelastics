@@ -35,21 +35,18 @@ def apply_pendulum_force():
     """Fill in the `forces` field with spring forces between points."""
     for i in pos:
         forces[i] = ti.Vector([0.0, -gravity])
-    #alpha = PI / 2 - ti.atan2(pos[0][1], pos[0][0])
-    #beta = PI / 2 - ti.atan2(pos[1][1] - pos[0][1], pos[1][0] - pos[0][0])
-    #print("alpha", alpha)
-    #print("beta", beta)
+    # alpha = PI / 2 - ti.atan2(pos[0][1], pos[0][0])
+    # beta = PI / 2 - ti.atan2(pos[1][1] - pos[0][1], pos[1][0] - pos[0][0])
+    # print("alpha", alpha)
+    # print("beta", beta)
 
     for i in range(2):
         if i == 0:
             # apply force from first spring
             d = pos[0] - pivot
-            forces[i] -= (
-                (length(d) - rest_lengths[i]) * k_spring * d / length(d)
-            )
+            forces[i] -= (length(d) - rest_lengths[i]) * k_spring * d / length(d)
         d2 = pos[1] - pos[0]
-        second_force = (
-            length(d2) - rest_lengths[1]) * k_spring * d2 / length(d2)
+        second_force = (length(d2) - rest_lengths[1]) * k_spring * d2 / length(d2)
         if i == 0:
             forces[i] += second_force
         else:
