@@ -24,7 +24,9 @@ def cloth():
 @app.command()
 def spring_pendulum():
     """Runs a simple spring-pendulum physics simulation."""
-    raise NotImplementedError()
+    from .spring_pendulum import run
+
+    run()
 
 
 if __name__ == "__main__":
