@@ -23,6 +23,7 @@ class Object:
         # TODO: Render this object with rasterization
         raise NotImplementedError()
 
+
 def center_of_mass(verts, tets):
     tet_centers = []
     vols = []
@@ -30,10 +31,11 @@ def center_of_mass(verts, tets):
         tet_vtxs = np.array([verts[i] for i in tet])
         tet_centers.append(np.mean(tet_vtxs, axis=0))
         tet_vtxs = np.hstack((tet_vtxs, np.ones((4, 1))))
-        vols.append(np.abs(np.linalg.det(tet_vtxs)/6))
-    return np.average(np.array(tet_centers), weights = np.array(vols), axis = 0)
+        vols.append(np.abs(np.linalg.det(tet_vtxs) / 6))
+    return np.average(np.array(tet_centers), weights=np.array(vols), axis=0)
 
-'''
+
+"""
 sanity check for center of mass. feel free to move/delete this; i wasn't sure where to put it
 verts = [[0, 0, 0], 
 [3, 0, 0], 
@@ -46,4 +48,4 @@ tets = [
     (1, 2, 3, 4)
 ]
 assert(np.all(center_of_mass(verts, tets) == np.array([1., 2., 3.])))
-'''
+"""
