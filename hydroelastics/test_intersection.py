@@ -7,11 +7,10 @@ from typing import List
 
 ti.init(arch=ti.cpu)
 
-from object import Object, intersect
+from hydroelastics.object import Object, intersect
 
 
 def test_isect():
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
     tet1 = Object(
         verts=[
             (0.0, 0.0, 0.0),
@@ -35,15 +34,15 @@ def test_isect():
         mass=1,
     )
 
-    pts = intersect(tet1, tet2, 0, 0)
+    pts, length = intersect(tet1, tet2, 0, 0)
     res = [
         np.array([0.0, 0.0, 0.9]),
         np.array([0.1, 0.0, 0.9]),
         np.array([0.0, 0.1, 0.9]),
     ]
-    assert len(pts) == len(res)
-    for i in range(len(pts)):
-        assert np.linalg.norm(pts[i] - res[i]) < 1e-6
+    assert length == len(res)
+    for i in range(len(res)):
+        assert np.linalg.norm(pts[i].to_numpy() - res[i]) < 1e-6
 
 
 test_isect()
