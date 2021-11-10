@@ -4,17 +4,6 @@ from typing import List, Tuple
 import os
 
 
-def center_of_mass(verts, tets):
-    tet_centers = []
-    vols = []
-    for tet in tets:
-        tet_vtxs = np.array([verts[i] for i in tet])
-        tet_centers.append(np.mean(tet_vtxs, axis=0))
-        tet_vtxs = np.hstack((tet_vtxs, np.ones((4, 1))))
-        vols.append(np.abs(np.linalg.det(tet_vtxs) / 6))
-    return np.average(np.array(tet_centers), weights=np.array(vols), axis=0)
-
-
 @ti.data_oriented
 class Object:
     def __init__(self, verts, potentials, tets, mass: float):
@@ -40,12 +29,25 @@ class Object:
         self.pose = None
 
         # TODO: Initialize the fields with parameters
-        # TODO: Calculate center of mass in identity pose and store in self.com
 
     # @ti.kernel
     def draw(self):
         # TODO: Render this object with rasterization
         raise NotImplementedError()
+
+
+def center_of_mass(verts, tets):
+    """
+    compute center of mass of an object given vertex positions and tet shape
+    """
+    tet_centers = []
+    vols = []
+    for tet in tets:
+        tet_vtxs = np.array([verts[i] for i in tet])
+        tet_centers.append(np.mean(tet_vtxs, axis=0))
+        tet_vtxs = np.hstack((tet_vtxs, np.ones((4, 1))))
+        vols.append(np.abs(np.linalg.det(tet_vtxs) / 6))
+    return np.average(np.array(tet_centers), weights=np.array(vols), axis=0)
 
 
 def intersect(
@@ -125,19 +127,3 @@ def intersect(
                     ) * self_coords[i][k] + frac * self_coords[j][k]
                 num_intersection_points += 1
     return intersection_points, num_intersection_points
-
-
-"""
-sanity check for center of mass. feel free to move/delete this; i wasn't sure where to put it
-verts = [[0, 0, 0], 
-[3, 0, 0], 
-[0, 0, 9], 
-[0, 6, 0], 
-[2, 4, 6]
-]
-tets = [
-    (0, 1, 2, 3), 
-    (1, 2, 3, 4)
-]
-assert(np.all(center_of_mass(verts, tets) == np.array([1., 2., 3.])))
-"""
