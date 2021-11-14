@@ -2,6 +2,7 @@ import taichi as ti
 import numpy as np
 from typing import List, Tuple
 import os
+import math
 
 from sympy import Polygon, pi, Point
 from shapely.geometry import Polygon
@@ -220,3 +221,94 @@ def intersect(
         return final_res
 
     # intersect the tetrahedron a[fact_idx] with the plane intersection
+    i_value = ti.field(dtype=ti.f32, shape=(4,))  # the inner products of each vertex
+    for i in range(4):
+        i_value[i] = 0
+        for j in range(3):
+            i_value[i] += intersection_ti[None][j] * self_coords[i][j]
+        i_value[i] += intersection_ti[None][3]
+        # i_value[i] = np.dot(intersection, np.append(self_coords[i], 1.0))
+    intersection_points = ti.Vector.field(
+        3, dtype=ti.f32, shape=(6,)
+    )  # all intersection points
+    num_intersection_points = 0
+    for i in range(4):
+        for j in range(i, 4):
+            if i_value[i] * i_value[j] < 0:  # must be different signs
+                frac = i_value[i] / (i_value[i] - i_value[j])  # must be between 0 and 1
+                for k in range(3):
+                    intersection_points[num_intersection_points][k] = (
+                        1 - frac
+                    ) * self_coords[i][k] + frac * self_coords[j][k]
+                num_intersection_points += 1
+    return intersection_points, num_intersection_points
+
+
+def triangulate_polygon(vertices):
+    """
+    given out-of-order coordinates of vertices of a planar and convex polygon in an Nx3 np array, output a triangulation
+    of the polygon
+    """
+    N = vertices.shape[0]
+    com = np.mean(
+        vertices, axis=0
+    )  # get center of mass of polygon for convenient interior point
+    angles = [(0, 0)]  # list of (angle, vtx index corresponding to angle)
+    displacements = vertices - com
+    mags = np.linalg.norm(displacements, axis=1)
+    ind = 1
+    normal = np.cross(
+        displacements[0], displacements[ind]
+    )  # compute any normal to the plane
+    while np.linalg.norm(normal) < 1e-6 * mags[0] * mags[ind]:
+        ind += 1
+        normal = np.cross(displacements[0], displacements[ind])
+    initial_disp = displacements[0, :]
+    for ind in range(1, N):
+        disp = displacements[ind, :]
+        angle = np.arccos(np.dot(disp, initial_disp) / (mags[0] * mags[ind]))
+        if np.dot(np.cross(disp, initial_disp), normal) < 0:
+            angle = 2 * math.pi - angle
+        angles.append((angle, ind))
+    angles.sort()
+    # 0, 1, 2; 0, 2, 3;, 0, 3, 4 ..., 0, n-2, n-1
+    return [(0, angles[i][1], angles[i + 1][1]) for i in range(1, N - 1)]
+
+
+def pressure(A, B, i, j):
+    """
+    compute overall pressure between two tets A[i], B[j] of objects A, B
+    """
+    total_pressure = 0
+    intersection_polygon = intersect(A, B, i, j)
+    if len(intersection_polygon) > 0:
+        print(np.array(intersection_polygon[:-1]))
+        triangles = triangulate_polygon(np.array(intersection_polygon[:-1]))
+        vtx_coords = np.zeros((4, 3))
+        vtx_inds = []
+        for k in range(4):
+            ind = A.tets[i][k]
+            vtx_coords[k] = A.vertices[ind]
+            vtx_inds.append(ind)
+        vtx_coords = np.hstack(
+            (vtx_coords, np.ones((4, 1)))
+        ).T  # 4x4 matrix of vtxs padded w 1s
+        for x, y, z in triangles:
+            vtx1, vtx2, vtx3 = (
+                intersection_polygon[x],
+                intersection_polygon[y],
+                intersection_polygon[z],
+            )
+            com = np.array(
+                [(vtx1[k] + vtx2[k] + vtx3[k]) / 3 for k in range(3)]
+                + [
+                    1,
+                ]
+            )
+            res = np.linalg.solve(vtx_coords, com)
+            print("PRESSURE COMPUTATION")
+            print(res)
+            print(x, y, z)
+            for k in range(4):
+                total_pressure += res[k] * A.potentials[vtx_inds[k]]
+    return total_pressure
