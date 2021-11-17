@@ -24,6 +24,12 @@ To run a top-level Python entry point in `main.py`, use the command:
 just run [COMMAND]
 ```
 
+To run unit tests specified in the code, use the command:
+
+```bash
+just test
+```
+
 You can use `just run --help` to display a list of runnable commands. Each program may take appropriate command-line arguments (parsed via [Typer](https://typer.tiangolo.com/)) to customize their behavior.
 
 ## Development

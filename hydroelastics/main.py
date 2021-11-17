@@ -14,14 +14,6 @@ def julia_set():
 
 
 @app.command()
-def test():
-    """Runs the tests"""
-    import subprocess
-
-    subprocess.run("python -m pytest", shell=True)
-
-
-@app.command()
 def cloth():
     """Runs a simple cloth simulation based on linked springs."""
     from .cloth import run
