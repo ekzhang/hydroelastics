@@ -1,5 +1,9 @@
 module Hydroelastics
 
-greet() = print("Hello World!")
+using RigidBodyDynamics
+using LinearAlgebra
+using StaticArrays
+
+include("object.jl")
 
 end

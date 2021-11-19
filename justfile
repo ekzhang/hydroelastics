@@ -3,8 +3,11 @@ julia := "julia --project=."
 install:
     {{julia}} -e "import Pkg; Pkg.instantiate()"
 
-run *ARGS:
-    {{julia}} {{ARGS}}
+repl:
+    {{julia}}
+
+notebook:
+    {{julia}} -e "import Pluto; Pluto.run()"
 
 format:
     {{julia}} -e "using JuliaFormatter; format(\".\", verbose=true)"

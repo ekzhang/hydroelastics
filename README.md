@@ -18,11 +18,11 @@ Then, run the following command to instantiate the Julia package environment.
 just install
 ```
 
-To run an interactive Julia REPL or run a file, use the following command:
+To run the interactive [Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/) or open a [Pluto](https://github.com/fonsp/Pluto.jl) notebook server, use the following commands:
 
 ```bash
-just run                       # repl
-just run examples/pendulum.jl  # run an example
+just repl      # open Julia REPL (can add packages here)
+just notebook  # start server (try opening examples/cube.jl)
 ```
 
 To unit tests specified in the `test/` folder, use the command:
