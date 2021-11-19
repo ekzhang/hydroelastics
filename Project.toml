@@ -1,0 +1,9 @@
+name = "Hydroelastics"
+uuid = "7b3857b3-81c1-4083-8a2a-77e0f9ff93fb"
+authors = ["Eric Zhang <ekzhang1@gmail.com>", "Vincent Huang <vincenthuang75025@gmail.com>", "Franklyn Wang<franklynw2000@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"

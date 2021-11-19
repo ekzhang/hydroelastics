@@ -1,16 +1,16 @@
-python := "python3"
+julia := "julia --project=."
 
 install:
-    {{python}} -m pip install -r requirements.txt
+    {{julia}} -e "import Pkg; Pkg.instantiate()"
 
 run *ARGS:
-    {{python}} -m hydroelastics.main {{ARGS}}
+    {{julia}} {{ARGS}}
 
 format:
-    {{python}} -m black .
+    {{julia}} -e "using JuliaFormatter; format(\".\", verbose=true)"
 
 check:
-    {{python}} -m black --check .
+    {{julia}} -e "using JuliaFormatter; exit(!format(\".\", verbose=true))"
 
 test:
-    {{python}} -m pytest
+    {{julia}} -e "import Pkg; Pkg.test()"
