@@ -8,9 +8,8 @@ The simulator is differentiable and implemented using the [Julia](https://julial
 
 The following requirements must be present in your environment.
 
-- [Julia 1.6+](https://julialang.org/) and [Pkg](https://docs.julialang.org/en/v1/stdlib/Pkg/)
+- [Julia 1.6+](https://julialang.org/)
 - [Just](https://github.com/casey/just): a command runner
-- OpenGL-enabled graphics card used by [GLMakie](https://makie.juliaplots.org/dev/documentation/backends_and_output/)
 
 Then, run the following command to instantiate the Julia package environment.
 
