@@ -1,13 +1,12 @@
 import os
 
-# import the object class from object.py
 import taichi as ti
 import numpy as np
-from typing import List
 
 ti.init(arch=ti.cpu)
 
-from hydroelastics.object import Object, intersect
+# import the object class from object.py
+from .object import Object, intersect
 
 
 def test_isect():

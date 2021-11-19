@@ -1,13 +1,9 @@
-import os
-
-# import the object class from object.py
 import taichi as ti
-import numpy as np
-from typing import List
 
 ti.init(arch=ti.cpu)
 
-from hydroelastics.object import Object, pressure
+# import the object class from object.py
+from .object import Object, pressure
 
 
 def test_pressure():
