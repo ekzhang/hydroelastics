@@ -1,10 +1,8 @@
 import taichi as ti
 import numpy as np
 from typing import List, Tuple
-import os
 import math
 
-from sympy import Polygon, pi, Point
 from shapely.geometry import Polygon
 
 
@@ -64,9 +62,6 @@ def intersect(
     for i in range(4):
         self_coords[i] = a.vertices[a.tets[a_face_idx][i]]
     print("self_coords", self_coords)
-
-    # if a.pose is not None:
-    #    self_coords = a.pose(self_coords)
 
     def get_equations(vertices, tets, potentials, pose, face_idx):
         self_coords = ti.Vector.field(3, dtype=ti.f32, shape=(4,))
@@ -219,29 +214,6 @@ def intersect(
                 )
 
         return final_res
-
-    # intersect the tetrahedron a[fact_idx] with the plane intersection
-    i_value = ti.field(dtype=ti.f32, shape=(4,))  # the inner products of each vertex
-    for i in range(4):
-        i_value[i] = 0
-        for j in range(3):
-            i_value[i] += intersection_ti[None][j] * self_coords[i][j]
-        i_value[i] += intersection_ti[None][3]
-        # i_value[i] = np.dot(intersection, np.append(self_coords[i], 1.0))
-    intersection_points = ti.Vector.field(
-        3, dtype=ti.f32, shape=(6,)
-    )  # all intersection points
-    num_intersection_points = 0
-    for i in range(4):
-        for j in range(i, 4):
-            if i_value[i] * i_value[j] < 0:  # must be different signs
-                frac = i_value[i] / (i_value[i] - i_value[j])  # must be between 0 and 1
-                for k in range(3):
-                    intersection_points[num_intersection_points][k] = (
-                        1 - frac
-                    ) * self_coords[i][k] + frac * self_coords[j][k]
-                num_intersection_points += 1
-    return intersection_points, num_intersection_points
 
 
 def triangulate_polygon(vertices):

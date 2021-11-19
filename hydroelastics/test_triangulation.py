@@ -1,9 +1,9 @@
-from hydroelastics.object import triangulate_polygon
+import numpy as np
 from taichi import ti
 
 ti.init(arch=ti.cpu)
 
-import numpy as np
+from .object import triangulate_polygon
 
 
 def test_triangulation():
