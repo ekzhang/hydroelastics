@@ -59,21 +59,22 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     end
     isect_A = hcat(isect_tet_plane(intersection_eq, coords_A)...)
     isect_B = hcat(isect_tet_plane(intersection_eq, coords_B)...)
-    xproj = false
-    yproj = false
-    zproj = false
     begin
-        if intersection_eq[1] != 0
-            twoDproj = [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-            xproj = true
-        elseif intersection_eq[2] != 0
-            twoDproj = [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
-            yproj = true
-        elseif intersection_eq[3] != 0
-            twoDproj = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]
-            zproj = true
+        xproj = false
+        yproj = false
+        zproj = false
+        begin
+            if intersection_eq[1] != 0
+                twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
+                xproj = true
+            elseif intersection_eq[2] != 0
+                twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
+                yproj = true
+            elseif intersection_eq[3] != 0
+                twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
+                zproj = true
+            end
         end
-        twoDproj = transpose(hcat(twoDproj...))
     end
 
     function project_to_2D(coords, proj)
@@ -84,27 +85,21 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     PA = polyhedron(vrep(transpose(Apoly)), lib)
     PB = polyhedron(vrep(transpose(Bpoly)), lib)
     res = polyhedron(vrep(intersect(PA, PB)))
-    all_points = transpose(hcat(points(res.vrep)...))
-    final_res = zeros(size(all_points, 1), 3)
-    for i = 1:size(all_points, 1)
+    all_points = hcat(points(res.vrep)...)
+    final_res = zeros(3, size(all_points, 2))
+    for i = 1:size(all_points, 2)
         if xproj
-            for i = 1:size(all_points, 1)
-                final_res[i, 2] = all_points[i, 1]
-                final_res[i, 3] = all_points[i, 2]
-                final_res[i, 1] = (-intersection_eq[4] - intersection_eq[2] * final_res[i, 2] - intersection_eq[1] * final_res[i, 1]) / intersection_eq[1]
-            end
+            final_res[2, i] = all_points[1, i]
+            final_res[3, i] = all_points[2, i]
+            final_res[1, i] = (-intersection_eq[4] - intersection_eq[2] * final_res[2, i] - intersection_eq[1] * final_res[1, i]) / intersection_eq[1]
         elseif yproj
-            for i = 1:size(all_points, 1)
-                final_res[i, 1] = all_points[i, 1]
-                final_res[i, 3] = all_points[i, 2]
-                final_res[i, 2] = (-intersection_eq[4] - intersection_eq[3] * final_res[i, 3] - intersection_eq[1] * final_res[i, 1]) / intersection_eq[2]
-            end
+            final_res[1, i] = all_points[1, i]
+            final_res[3, i] = all_points[2, i]
+            final_res[2, i] = (-intersection_eq[4] - intersection_eq[3] * final_res[3, i] - intersection_eq[1] * final_res[1, i]) / intersection_eq[2]
         elseif zproj
-            for i = 1:size(all_points, 1)
-                final_res[i, 1] = all_points[i, 1]
-                final_res[i, 2] = all_points[i, 2]
-                final_res[i, 3] = (-intersection_eq[4] - intersection_eq[1] * final_res[i, 1] - intersection_eq[2] * final_res[i, 2]) / intersection_eq[3]
-            end
+            final_res[1, i] = all_points[1, i]
+            final_res[2, i] = all_points[2, i]
+            final_res[3, i] = (-intersection_eq[4] - intersection_eq[1] * final_res[1, i] - intersection_eq[2] * final_res[2, i]) / intersection_eq[3]
         end
     end
     return final_res
@@ -115,3 +110,4 @@ mutable struct Object
     #transform::Transform3D
     #frame::CartesianFrame3D
 end
+
