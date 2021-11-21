@@ -17,7 +17,10 @@ struct Mesh
         #println("Mesh: verts = ", verts)
         @assert(size(verts, 1) == 3, "verts should be in R3")
         @assert(size(tets, 1) == 4, "tets should be 4-tuples of indices")
-        @assert(size(potentials, 1) == size(verts, 2), "potentials should be the same size as verts")
+        @assert(
+            size(potentials, 1) == size(verts, 2),
+            "potentials should be the same size as verts"
+        )
         n, m = size(verts, 2), size(tets, 2)
         new(n, m, verts, tets, potentials)
     end
@@ -51,7 +54,10 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
             for j = i+1:4
                 if dot_prods[i] * dot_prods[j] < 0
                     frac = dot_prods[i] / (dot_prods[i] - dot_prods[j])
-                    push!(intersection_points, (1 - frac) * coords[:, i] + frac * coords[:, j])
+                    push!(
+                        intersection_points,
+                        (1 - frac) * coords[:, i] + frac * coords[:, j],
+                    )
                 end
             end
         end
@@ -91,15 +97,27 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
         if xproj
             final_res[2, i] = all_points[1, i]
             final_res[3, i] = all_points[2, i]
-            final_res[1, i] = (-intersection_eq[4] - intersection_eq[2] * final_res[2, i] - intersection_eq[1] * final_res[1, i]) / intersection_eq[1]
+            final_res[1, i] =
+                (
+                    -intersection_eq[4] - intersection_eq[2] * final_res[2, i] -
+                    intersection_eq[1] * final_res[1, i]
+                ) / intersection_eq[1]
         elseif yproj
             final_res[1, i] = all_points[1, i]
             final_res[3, i] = all_points[2, i]
-            final_res[2, i] = (-intersection_eq[4] - intersection_eq[3] * final_res[3, i] - intersection_eq[1] * final_res[1, i]) / intersection_eq[2]
+            final_res[2, i] =
+                (
+                    -intersection_eq[4] - intersection_eq[3] * final_res[3, i] -
+                    intersection_eq[1] * final_res[1, i]
+                ) / intersection_eq[2]
         elseif zproj
             final_res[1, i] = all_points[1, i]
             final_res[2, i] = all_points[2, i]
-            final_res[3, i] = (-intersection_eq[4] - intersection_eq[1] * final_res[1, i] - intersection_eq[2] * final_res[2, i]) / intersection_eq[3]
+            final_res[3, i] =
+                (
+                    -intersection_eq[4] - intersection_eq[1] * final_res[1, i] -
+                    intersection_eq[2] * final_res[2, i]
+                ) / intersection_eq[3]
         end
     end
     return final_res
@@ -110,4 +128,3 @@ mutable struct Object
     #transform::Transform3D
     #frame::CartesianFrame3D
 end
-
