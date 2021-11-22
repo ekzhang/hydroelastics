@@ -12,6 +12,7 @@ struct Mesh
     verts::Matrix{Float64} # shape: [3, n]
     tets::Matrix{Int64} # shape: [4, m]
     potentials::Vector{Float64} # shape: [n]
+    com::Vector{Float64}
 
     Mesh(verts, tets, potentials) = begin
         #println("Mesh: verts = ", verts)
@@ -22,8 +23,30 @@ struct Mesh
             "potentials should be the same size as verts"
         )
         n, m = size(verts, 2), size(tets, 2)
-        new(n, m, verts, tets, potentials)
+        com = center_of_mass(verts, tets)
+        new(n, m, verts, tets, potentials, com)
     end
+end
+
+function center_of_mass(verts, tets)
+    ```
+    compute center of mass given coords of vertices and tets
+    ```
+    # verts [3,n]; tets [4, m]
+    tet_centers = Vector{Float64}()
+    vols = Vector{Float64}()
+    for i = 1:size(tets)[2]
+        tet_vtxs = verts[:, tets[:, i]] # 3 x 4
+        append!(tet_centers, [sum(tet_vtxs[i, :]) for i = 1:3] / 4)
+        tet_vtxs = [tet_vtxs; ones(Int, 1, 4)]
+        append!(vols, abs(det(tet_vtxs) / 6))
+    end
+    com = [0, 0, 0]
+    tet_centers = reshape(tet_centers, 3, size(tets)[2]) # 3 x m
+    for i = 1:size(tet_centers)[2]
+        com = com + tet_centers[:, i] * vols[i]
+    end
+    com / sum(vols)
 end
 
 function intersect_tets(m1, m2, a_face_idx, b_face_idx)
@@ -120,7 +143,69 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
                 ) / intersection_eq[3]
         end
     end
-    return final_res
+    final_res
+end
+
+function triangulate_polygon(vertices)
+    """
+    given out-of-order coordinates of vertices of a planar and convex polygon in a 3xN matrix, output a triangulation
+    of the polygon
+    """
+    N = size(vertices)[2]
+    com = [sum(vertices[i, :]) for i = 1:3] / N
+    angles = [0.0]  # list of (angle, vtx index corresponding to angle)
+    displacements = vertices - reshape(repeat(com, N), 3, N)
+    mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:N]
+    ind = 2
+    normal = cross(displacements[:, 1], displacements[:, ind])  # compute any normal to the plane
+    while sqrt(dot(normal, normal)) < 0.000001 * mags[1] * mags[ind]
+        ind += 1
+        normal = cross(displacements[:, 1], displacements[:, ind])
+    end
+    initial_disp = displacements[:, 1]
+    for ind = 2:N
+        disp = displacements[:, ind]
+        angle = acos(dot(disp, initial_disp) / (mags[1] * mags[ind]))
+        if dot(cross(disp, initial_disp), normal) < 0
+            angle = 2 * pi - angle
+        end
+        append!(angles, [angle])
+    end
+    order = sortperm(angles)
+    # 0, 1, 2; 0, 2, 3;, 0, 3, 4 ..., 0, n-2, n-1
+    [[1, order[i], order[i+1]] for i = 2:N-1]
+end
+
+function pressure(A, B, i, j)
+    """
+    compute overall pressure between two tets A[i], B[j] of objects A, B
+    """
+    total_pressure = 0
+    intersection_polygon = intersect_tets(A, B, i, j)
+    if size(intersection_polygon)[1] > 0
+        triangles = triangulate_polygon(intersection_polygon)
+        vtx_coords = zeros(Float64, 4, 3)
+        vtx_inds = []
+        for k = 1:4
+            ind = A.tets[k, i]
+            vtx_coords[k, :] = A.verts[:, ind]
+            append!(vtx_inds, ind)
+        end
+        vtx_coords = [vtx_coords ones(4, 1)]'  # 4x4 matrix of vtxs padded w 1s
+        for (x, y, z) in triangles
+            vtx1, vtx2, vtx3 = (
+                intersection_polygon[:, x],
+                intersection_polygon[:, y],
+                intersection_polygon[:, z],
+            )
+            com = append!([(vtx1[k] + vtx2[k] + vtx3[k]) / 3 for k = 1:3], [1])
+            res = vtx_coords \ com
+            for k = 1:4
+                total_pressure += res[k] * A.potentials[vtx_inds[k]]
+            end
+        end
+    end
+    total_pressure
 end
 
 mutable struct Object
