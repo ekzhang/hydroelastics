@@ -4,12 +4,20 @@ using Hydroelastics
 
 function test_isect_tet()
     tet1 = Mesh(
-        [[0.0, 0.0, 0.0] [1.0, 0.0, 0.0] [0.0, 1.0, 0.0] [0.0, 0.0, 1.0]],
+        [
+            0.0 1.0 0.0 0.0
+            0.0 0.0 1.0 0.0
+            0.0 0.0 0.0 1.0
+        ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
     )
     tet2 = Mesh(
-        [[0.0, 0.0, 2 - 0.2] [1.0, 0.0, 2 - 0.2] [0.0, 1.0, 2 - 0.2] [0.0, 0.0, 1 - 0.2]],
+        [
+            0.0 1.0 0.0 0.0
+            0.0 0.0 1.0 0.0
+            1.8 1.8 1.8 0.8
+        ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
     )
@@ -17,17 +25,17 @@ function test_isect_tet()
     points = intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
 
-    for i = 1:size(points, 2)
+    for p in eachcol(points)
         # there must exist a j in res which is close
         found = false
-        for j in expected_points
-            if norm(points[:, i] - j) < 1e-4
+        for q in expected_points
+            if norm(p - q) < 1e-4
                 found = true
                 break
             end
         end
         if !found
-            return false
+            error("could not find returned point $p in $expected_points")
         end
     end
 
