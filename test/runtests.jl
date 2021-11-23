@@ -84,7 +84,7 @@ end
 test_triangulation()
 
 
-function test_pressure()
+function test_force()
     tet1 = Mesh(
         [
             0.0 1 0 0
@@ -106,10 +106,11 @@ function test_pressure()
         #mass=1,
     )
 
-    final_res = pressure(tet1, tet2, 1, 1)
+    force = tet_force(tet1, tet2, 1, 1)
     # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
     # so the weights on the vtxs of A should be .033, .033, .033, .9
-    @test abs(final_res - 0.9) < 0.1^6
+    expected_force = [0, 0, -0.9]
+    @test norm(force - expected_force) < 0.1^6
 end
 
-test_pressure()
+test_force()

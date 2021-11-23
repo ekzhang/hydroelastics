@@ -8,7 +8,7 @@ struct Mesh
     potentials::Vector{Float64} # shape: [n]
     com::Vector{Float64}
 
-    Mesh(verts, tets, potentials) = begin
+    Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
         #println("Mesh: verts = ", verts)
         @assert(size(verts, 1) == 3, "verts should be in R3")
         @assert(size(tets, 1) == 4, "tets should be 4-tuples of indices")
@@ -22,7 +22,7 @@ struct Mesh
     end
 end
 
-function center_of_mass(verts, tets)
+function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
     ```
     compute center of mass given coords of vertices and tets
     ```
@@ -43,13 +43,13 @@ function center_of_mass(verts, tets)
     com / sum(vols)
 end
 
-function intersect_tets(m1, m2, a_face_idx, b_face_idx)
+function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64)
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
     # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
 
-    function get_equations(coords, potentials)
+    function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
         x = mat \ potentials
@@ -63,7 +63,7 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
         return []
     end
 
-    function isect_tet_plane(intersection_eq, coords)
+    function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
         dot_prods = mat * intersection_eq
@@ -136,7 +136,7 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     final_res
 end
 
-function triangulate_polygon(vertices)
+function triangulate_polygon(vertices::Matrix{Float64})
     """
     given out-of-order coordinates of vertices of a planar and convex polygon in a 3xN matrix, output a triangulation
     of the polygon
@@ -166,11 +166,12 @@ function triangulate_polygon(vertices)
     hcat([[1, order[i], order[i+1]] for i = 2:N-1]...)
 end
 
-function pressure(A, B, i, j)
+function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     """
     compute overall pressure between two tets A[i], B[j] of objects A, B
     """
     total_pressure = 0
+    normal = [0, 0, 0]
     intersection_polygon = intersect_tets(A, B, i, j)
     if size(intersection_polygon)[1] > 0
         triangles = triangulate_polygon(intersection_polygon)
@@ -185,8 +186,23 @@ function pressure(A, B, i, j)
                 total_pressure += res[k] * A.potentials[vtx_inds[k]]
             end
         end
+        normal = cross(intersection_polygon[:, 1] - intersection_polygon[:, 2], intersection_polygon[:, 1] - intersection_polygon[:, 3])
+        normal = normal/norm(normal)
+        if dot(normal, A.com - B.com) < 0
+            normal = -1 * normal
+        end
     end
-    total_pressure
+    total_pressure * normal
+end
+
+function mesh_force(A::Mesh, B::Mesh)
+    force = [0 0 0]
+    for i = 1 : A.m
+        for j = 1 : B.m
+            force += tet_force(A, B, i, j)
+        end
+    end
+    force
 end
 
 mutable struct Object
@@ -195,4 +211,4 @@ mutable struct Object
     #frame::CartesianFrame3D
 end
 
-export Mesh, Object, intersect_tets, triangulate_polygon, pressure
+export Mesh, Object, intersect_tets, triangulate_polygon, tet_force, mesh_force
