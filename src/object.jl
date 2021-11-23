@@ -1,9 +1,9 @@
 using Polyhedra.Core;
 using LinearAlgebra;
 
-using Polyhedra
+using Polyhedra, DiffOpt
 import GLPK
-lib = DefaultLibrary{Float64}(GLPK.Optimizer)
+lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
 
 
 struct Mesh
@@ -65,22 +65,19 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     end
     isect_A = hcat(isect_tet_plane(intersection_eq, coords_A)...)
     isect_B = hcat(isect_tet_plane(intersection_eq, coords_B)...)
-    begin
-        xproj = false
-        yproj = false
-        zproj = false
-        begin
-            if intersection_eq[1] != 0
-                twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
-                xproj = true
-            elseif intersection_eq[2] != 0
-                twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
-                yproj = true
-            elseif intersection_eq[3] != 0
-                twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
-                zproj = true
-            end
-        end
+    xproj = false
+    yproj = false
+    zproj = false
+    if intersection_eq[1] != 0
+        twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
+        xproj = true
+    elseif intersection_eq[2] != 0
+        twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
+        yproj = true
+    elseif intersection_eq[3] != 0
+        twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
+        zproj = true
+
     end
 
     function project_to_2D(coords, proj)
@@ -122,6 +119,8 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     end
     return final_res
 end
+export Mesh
+export intersect_tets
 
 mutable struct Object
     mesh::Mesh
