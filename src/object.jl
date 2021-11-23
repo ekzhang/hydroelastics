@@ -142,10 +142,10 @@ function triangulate_polygon(vertices::Matrix{Float64})
     of the polygon
     """
     n = size(vertices)[2]
-    com = [sum(vertices[i, :]) for i = 1:3] / N
+    com = [sum(vertices[i, :]) for i = 1:3] / n
     angles = [0.0]  # list of (angle, vtx index corresponding to angle)
-    displacements = vertices - reshape(repeat(com, N), 3, N)
-    mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:N]
+    displacements = vertices - reshape(repeat(com, n), 3, n)
+    mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:n]
     ind = 2
     normal = cross(displacements[:, 1], displacements[:, ind])  # compute any normal to the plane
     while sqrt(dot(normal, normal)) < 0.000001 * mags[1] * mags[ind]
@@ -159,11 +159,11 @@ function triangulate_polygon(vertices::Matrix{Float64})
         if dot(cross(disp, initial_disp), normal) < 0
             angle = 2 * pi - angle
         end
-        push(angles, angle)
+        push!(angles, angle)
     end
     order = sortperm(angles)
     # 1, 2, 3; 1, 3, 4;, 1, 4, 5 ..., 1, n-1, n
-    hcat([[1, order[i], order[i+1]] for i = 2:N-1]...)
+    hcat([[1, order[i], order[i+1]] for i = 2:n-1]...)
 end
 
 function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
