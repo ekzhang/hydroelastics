@@ -141,7 +141,7 @@ function triangulate_polygon(vertices::Matrix{Float64})
     given out-of-order coordinates of vertices of a planar and convex polygon in a 3xN matrix, output a triangulation
     of the polygon
     """
-    N = size(vertices)[2]
+    n = size(vertices)[2]
     com = [sum(vertices[i, :]) for i = 1:3] / N
     angles = [0.0]  # list of (angle, vtx index corresponding to angle)
     displacements = vertices - reshape(repeat(com, N), 3, N)
@@ -153,13 +153,13 @@ function triangulate_polygon(vertices::Matrix{Float64})
         normal = cross(displacements[:, 1], displacements[:, ind])
     end
     initial_disp = displacements[:, 1]
-    for ind = 2:N
+    for ind = 2:n
         disp = displacements[:, ind]
         angle = acos(dot(disp, initial_disp) / (mags[1] * mags[ind]))
         if dot(cross(disp, initial_disp), normal) < 0
             angle = 2 * pi - angle
         end
-        append!(angles, [angle])
+        push(angles, angle)
     end
     order = sortperm(angles)
     # 1, 2, 3; 1, 3, 4;, 1, 4, 5 ..., 1, n-1, n
@@ -183,9 +183,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
-            for k = 1:4
-                total_pressure += res[k] * A.potentials[vtx_inds[k]]
-            end
+            total_pressure += sum(res .* A.potentials[vtx_inds])
         end
         normal = cross(
             intersection_polygon[:, 1] - intersection_polygon[:, 2],
