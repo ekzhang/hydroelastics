@@ -9,7 +9,6 @@ struct Mesh
     com::Vector{Float64}
 
     Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
-        #println("Mesh: verts = ", verts)
         @assert(size(verts, 1) == 3, "verts should be in R3")
         @assert(size(tets, 1) == 4, "tets should be 4-tuples of indices")
         @assert(
@@ -52,8 +51,6 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
-        print("mat = ", mat)
-        print("potentials = ", potentials)
         x = mat \ potentials
         return x
     end
@@ -173,7 +170,7 @@ end
 
 function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     """
-    compute overall force between two tets A[i], B[j] of objects A, B. 
+    compute overall force between two tets A[i], B[j] of objects A, B.
     return the force applied to A (in the direction of A.com - B.com)
     """
     total_pressure = 0
@@ -206,7 +203,7 @@ function mesh_force(A::Mesh, B::Mesh)
     """
     Computes force on mesh A due to contact with mesh B
     """
-    force = [0 0 0]
+    force = zeros(3)
     for i = 1:A.m
         for j = 1:B.m
             force += tet_force(A, B, i, j)
