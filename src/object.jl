@@ -162,7 +162,7 @@ function triangulate_polygon(vertices)
         append!(angles, [angle])
     end
     order = sortperm(angles)
-    # 0, 1, 2; 0, 2, 3;, 0, 3, 4 ..., 0, n-2, n-1
+    # 1, 2, 3; 1, 3, 4;, 1, 4, 5 ..., 1, n-1, n
     hcat([[1, order[i], order[i+1]] for i = 2:N-1]...)
 end
 
@@ -176,7 +176,7 @@ function pressure(A, B, i, j)
         triangles = triangulate_polygon(intersection_polygon)
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]
-        vtx_coords = vcat(vtx_coords, ones(4))  # 4x4 matrix of vtxs padded w 1s
+        vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
         for xyz in eachcol(triangles)
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
@@ -195,4 +195,4 @@ mutable struct Object
     #frame::CartesianFrame3D
 end
 
-export Mesh, Object, intersect_tets, pressure
+export Mesh, Object, intersect_tets, triangulate_polygon, pressure

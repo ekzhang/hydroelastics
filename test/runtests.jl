@@ -55,3 +55,53 @@ function test_com()
 end
 
 test_com()
+
+function test_triangulation()
+    # start with (0, 0), (1, 0), (1, 1), (0, 2), (-2, 2), (-2, 1)
+    # map x, y -> 2*x+1, x-y-2, 2*y-x
+    # then shuffle vertices; old:new mapping is {0:0, 1:4, 2:1, 3:3, 4:5, 5:2}
+    polygon = [
+        1.0 3 -3 1 3 -3
+        -2 -2 -5 -4 -1 -6
+        0 1 4 4 -1 6
+    ]
+    result = [
+        1 1 1 1
+        3 6 4 2
+        6 4 2 5
+    ]
+    @test triangulate_polygon(polygon) == result
+end
+
+test_triangulation()
+
+
+function test_pressure()
+    tet1 = Mesh(
+        [
+            0.0 1 0 0
+            0 0 1 0
+            0 0 0 1
+        ],
+        reshape([1, 2, 3, 4], 4, 1),
+        [0.0, 0.0, 0.0, 1.0],
+        #mass=1,
+    )
+    tet2 = Mesh(
+        [
+            0 1 0 0
+            0 0 1 0
+            1.8 1.8 1.8 0.8
+        ],
+        reshape([1, 2, 3, 4], 4, 1),
+        [0.0, 0.0, 0.0, 1.0],
+        #mass=1,
+    )
+
+    final_res = pressure(tet1, tet2, 1, 1)
+    # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
+    # so the weights on the vtxs of A should be .033, .033, .033, .9
+    @test abs(final_res - 0.9) < 0.1^6
+end
+
+test_pressure()
