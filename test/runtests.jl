@@ -41,29 +41,37 @@ end
 
 function test_isect_tet()
     tet1 = Mesh(
-        [[0.0, 0.0, 0.0] [1.0, 0.0, 0.0] [0.0, 1.0, 0.0] [0.0, 0.0, 1.0]],
+        [
+            0.0 1.0 0.0 0.0
+            0.0 0.0 1.0 0.0
+            0.0 0.0 0.0 1.0
+        ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
     )
     tet2 = Mesh(
-        [[0.0, 0.0, 2 - 0.2] [1.0, 0.0, 2 - 0.2] [0.0, 1.0, 2 - 0.2] [0.0, 0.0, 1 - 0.2]],
+        [
+            0.0 1.0 0.0 0.0
+            0.0 0.0 1.0 0.0
+            1.8 1.8 1.8 0.8
+        ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
     )
 
-    final_res = intersect_tets(tet1, tet2, 1, 1)
-    res = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
-    works = true
-    for i = 1:size(final_res, 2)
+    points = intersect_tets(tet1, tet2, 1, 1)
+    expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
+
+    for p in eachcol(points)
         # there must exist a j in res which is close
         found = false
-        for j in res
-            if norm(final_res[:, i] - j) < 1e-4
+        for q in expected_points
+            if norm(p - q) < 1e-4
                 found = true
             end
         end
         if !found
-            global works = false
+            error("could not find returned point $p in $expected_points")
         end
     end
     works
@@ -98,3 +106,54 @@ function test_com()
     end
 end
 test_com()
+
+function test_triangulation()
+    # start with (0, 0), (1, 0), (1, 1), (0, 2), (-2, 2), (-2, 1)
+    # map x, y -> 2*x+1, x-y-2, 2*y-x
+    # then shuffle vertices; old:new mapping is {0:0, 1:4, 2:1, 3:3, 4:5, 5:2}
+    polygon = [
+        1.0 3 -3 1 3 -3
+        -2 -2 -5 -4 -1 -6
+        0 1 4 4 -1 6
+    ]
+    result = [
+        1 1 1 1
+        3 6 4 2
+        6 4 2 5
+    ]
+    @test triangulate_polygon(polygon) == result
+end
+
+test_triangulation()
+
+
+function test_force()
+    tet1 = Mesh(
+        [
+            0.0 1 0 0
+            0 0 1 0
+            0 0 0 1
+        ],
+        reshape([1, 2, 3, 4], 4, 1),
+        [0.0, 0.0, 0.0, 1.0],
+        #mass=1,
+    )
+    tet2 = Mesh(
+        [
+            0 1 0 0
+            0 0 1 0
+            1.8 1.8 1.8 0.8
+        ],
+        reshape([1, 2, 3, 4], 4, 1),
+        [0.0, 0.0, 0.0, 1.0],
+        #mass=1,
+    )
+
+    force = tet_force(tet1, tet2, 1, 1)
+    # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
+    # so the weights on the vtxs of A should be .033, .033, .033, .9
+    expected_force = [0, 0, -0.9]
+    @test norm(force - expected_force) < 0.1^6
+end
+
+test_force()

@@ -8,7 +8,7 @@ struct Mesh
     potentials::Vector{Float64} # shape: [n]
     com::Vector{Float64}
 
-    Mesh(verts, tets, potentials) = begin
+    Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
         #println("Mesh: verts = ", verts)
         @assert(size(verts, 1) == 3, "verts should be in R3")
         @assert(size(tets, 1) == 4, "tets should be 4-tuples of indices")
@@ -22,7 +22,7 @@ struct Mesh
     end
 end
 
-function center_of_mass(verts, tets)
+function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
     ```
     compute center of mass given coords of vertices and tets
     ```
@@ -43,13 +43,13 @@ function center_of_mass(verts, tets)
     com / sum(vols)
 end
 
-function intersect_tets(m1, m2, a_face_idx, b_face_idx)
+function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64)
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
     # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
 
-    function get_equations(coords, potentials)
+    function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
         print("mat = ", mat)
@@ -65,7 +65,7 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
         return []
     end
 
-    function isect_tet_plane(intersection_eq, coords)
+    function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
         dot_prods = mat * intersection_eq
@@ -141,16 +141,16 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     final_res
 end
 
-function triangulate_polygon(vertices)
+function triangulate_polygon(vertices::Matrix{Float64})
     """
     given out-of-order coordinates of vertices of a planar and convex polygon in a 3xN matrix, output a triangulation
     of the polygon
     """
-    N = size(vertices)[2]
-    com = [sum(vertices[i, :]) for i = 1:3] / N
+    n = size(vertices)[2]
+    com = [sum(vertices[i, :]) for i = 1:3] / n
     angles = [0.0]  # list of (angle, vtx index corresponding to angle)
-    displacements = vertices - reshape(repeat(com, N), 3, N)
-    mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:N]
+    displacements = vertices - reshape(repeat(com, n), 3, n)
+    mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:n]
     ind = 2
     normal = cross(displacements[:, 1], displacements[:, ind])  # compute any normal to the plane
     while sqrt(dot(normal, normal)) < 0.000001 * mags[1] * mags[ind]
@@ -158,40 +158,61 @@ function triangulate_polygon(vertices)
         normal = cross(displacements[:, 1], displacements[:, ind])
     end
     initial_disp = displacements[:, 1]
-    for ind = 2:N
+    for ind = 2:n
         disp = displacements[:, ind]
         angle = acos(dot(disp, initial_disp) / (mags[1] * mags[ind]))
         if dot(cross(disp, initial_disp), normal) < 0
             angle = 2 * pi - angle
         end
-        append!(angles, [angle])
+        push!(angles, angle)
     end
     order = sortperm(angles)
-    # 0, 1, 2; 0, 2, 3;, 0, 3, 4 ..., 0, n-2, n-1
-    hcat([[1, order[i], order[i+1]] for i = 2:N-1]...)
+    # 1, 2, 3; 1, 3, 4;, 1, 4, 5 ..., 1, n-1, n
+    hcat([[1, order[i], order[i+1]] for i = 2:n-1]...)
 end
 
-function pressure(A, B, i, j)
+function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     """
-    compute overall pressure between two tets A[i], B[j] of objects A, B
+    compute overall force between two tets A[i], B[j] of objects A, B. 
+    return the force applied to A (in the direction of A.com - B.com)
     """
     total_pressure = 0
+    normal = [0, 0, 0]
     intersection_polygon = intersect_tets(A, B, i, j)
     if size(intersection_polygon)[1] > 0
         triangles = triangulate_polygon(intersection_polygon)
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]
-        vtx_coords = vcat(vtx_coords, ones(4))  # 4x4 matrix of vtxs padded w 1s
+        vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
         for xyz in eachcol(triangles)
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
-            for k = 1:4
-                total_pressure += res[k] * A.potentials[vtx_inds[k]]
-            end
+            total_pressure += sum(res .* A.potentials[vtx_inds])
+        end
+        normal = cross(
+            intersection_polygon[:, 1] - intersection_polygon[:, 2],
+            intersection_polygon[:, 1] - intersection_polygon[:, 3],
+        )
+        normal = normal / norm(normal)
+        if dot(normal, A.com - B.com) < 0
+            normal = -1 * normal
         end
     end
-    total_pressure
+    total_pressure * normal
+end
+
+function mesh_force(A::Mesh, B::Mesh)
+    """
+    Computes force on mesh A due to contact with mesh B
+    """
+    force = [0 0 0]
+    for i = 1:A.m
+        for j = 1:B.m
+            force += tet_force(A, B, i, j)
+        end
+    end
+    force
 end
 
 mutable struct Object
@@ -200,36 +221,4 @@ mutable struct Object
     #frame::CartesianFrame3D
 end
 
-export Mesh, Object, intersect_tets, pressure
-
-function get_cube(com)
-    """
-    returns a cube with center at com
-    """
-    com = com
-    cube_verts = [
-        com + [-1.0, -1.0, -1.0],
-        com + [-1.0, -1.0, 1.0],
-        com + [-1.0, 1.0, -1.0],
-        com + [-1.0, 1.0, 1.0],
-        com + [1.0, -1.0, -1.0],
-        com + [1.0, -1.0, 1.0],
-        com + [1.0, 1.0, -1.0],
-        com + [1.0, 1.0, 1.0],
-        com,
-    ]
-    cube_tets = [
-        1 4 1 1 1 1 8 4 8 7 4 8
-        2 2 2 5 3 5 4 3 7 6 8 6
-        3 3 6 6 7 7 7 7 6 5 2 2
-        9 9 9 9 9 9 9 9 9 9 9 9
-    ]
-    cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    cube = Mesh(
-        verts = cube_verts,
-        tets = cube_tets,
-        potentials = cube_pots,
-    )
-    cube
-end
-
+export Mesh, Object, intersect_tets, triangulate_polygon, tet_force, mesh_force
