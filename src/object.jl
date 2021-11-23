@@ -1,10 +1,4 @@
-using Polyhedra.Core;
-using LinearAlgebra;
-
-using Polyhedra, DiffOpt
-import GLPK
 lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
-
 
 struct Mesh
     n::Int32 # number of vertices
@@ -50,7 +44,7 @@ function center_of_mass(verts, tets)
 end
 
 function intersect_tets(m1, m2, a_face_idx, b_face_idx)
-    # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx. 
+    # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
     # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
@@ -68,6 +62,7 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     if norm(intersection_eq[1:3]) < 1e-6
         return []
     end
+
     function isect_tet_plane(intersection_eq, coords)
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
@@ -84,10 +79,12 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
                 end
             end
         end
-        return intersection_points
+        return hcat(intersection_points...)
     end
-    isect_A = hcat(isect_tet_plane(intersection_eq, coords_A)...)
-    isect_B = hcat(isect_tet_plane(intersection_eq, coords_B)...)
+
+    isect_A = isect_tet_plane(intersection_eq, coords_A)
+    isect_B = isect_tet_plane(intersection_eq, coords_B)
+
     xproj = false
     yproj = false
     zproj = false
@@ -100,16 +97,12 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     elseif intersection_eq[3] != 0
         twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
         zproj = true
-
     end
 
-    function project_to_2D(coords, proj)
-        return proj * coords
-    end
-    Apoly = project_to_2D(isect_A, twoDproj)
-    Bpoly = project_to_2D(isect_B, twoDproj)
-    PA = polyhedron(vrep(transpose(Apoly)), lib)
-    PB = polyhedron(vrep(transpose(Bpoly)), lib)
+    Apoly = twoDproj * isect_A
+    Bpoly = twoDproj * isect_B
+    PA = polyhedron(vrep(Apoly'), lib)
+    PB = polyhedron(vrep(Bpoly'), lib)
     res = polyhedron(vrep(intersect(PA, PB)))
     all_points = hcat(points(res.vrep)...)
     final_res = zeros(3, size(all_points, 2))
@@ -170,7 +163,7 @@ function triangulate_polygon(vertices)
     end
     order = sortperm(angles)
     # 0, 1, 2; 0, 2, 3;, 0, 3, 4 ..., 0, n-2, n-1
-    [[1, order[i], order[i+1]] for i = 2:N-1]
+    hcat([[1, order[i], order[i+1]] for i = 2:N-1]...)
 end
 
 function pressure(A, B, i, j)
@@ -181,21 +174,12 @@ function pressure(A, B, i, j)
     intersection_polygon = intersect_tets(A, B, i, j)
     if size(intersection_polygon)[1] > 0
         triangles = triangulate_polygon(intersection_polygon)
-        vtx_coords = zeros(Float64, 4, 3)
-        vtx_inds = []
-        for k = 1:4
-            ind = A.tets[k, i]
-            vtx_coords[k, :] = A.verts[:, ind]
-            append!(vtx_inds, ind)
-        end
-        vtx_coords = [vtx_coords ones(4, 1)]'  # 4x4 matrix of vtxs padded w 1s
-        for (x, y, z) in triangles
-            vtx1, vtx2, vtx3 = (
-                intersection_polygon[:, x],
-                intersection_polygon[:, y],
-                intersection_polygon[:, z],
-            )
-            com = append!([(vtx1[k] + vtx2[k] + vtx3[k]) / 3 for k = 1:3], [1])
+        vtx_inds = A.tets[:, i]
+        vtx_coords = A.verts[:, vtx_inds]
+        vtx_coords = vcat(vtx_coords, ones(4))  # 4x4 matrix of vtxs padded w 1s
+        for xyz in eachcol(triangles)
+            vtxs = intersection_polygon[:, xyz]
+            com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
             for k = 1:4
                 total_pressure += res[k] * A.potentials[vtx_inds[k]]
@@ -204,11 +188,11 @@ function pressure(A, B, i, j)
     end
     total_pressure
 end
-export Mesh
-export intersect_tets
 
 mutable struct Object
     mesh::Mesh
     #transform::Transform3D
     #frame::CartesianFrame3D
 end
+
+export Mesh, Object, intersect_tets, pressure

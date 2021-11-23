@@ -1,6 +1,6 @@
 using Test
-using Hydroelastics
 using LinearAlgebra
+using Hydroelastics
 
 function test_isect_tet()
     tet1 = Mesh(
@@ -14,31 +14,27 @@ function test_isect_tet()
         [0.0, 0.0, 0.0, 1.0],
     )
 
-    final_res = intersect_tets(tet1, tet2, 1, 1)
-    println(final_res)
-    res = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
-    works = true
-    for i = 1:size(final_res, 2)
+    points = intersect_tets(tet1, tet2, 1, 1)
+    expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
+
+    for i = 1:size(points, 2)
         # there must exist a j in res which is close
         found = false
-        for j in res
-            println(j)
-            if norm(final_res[:, i] - j) < 1e-4
+        for j in expected_points
+            if norm(points[:, i] - j) < 1e-4
                 found = true
+                break
             end
         end
         if !found
-            global works = false
+            return false
         end
     end
-    works
+
+    true
 end
 
-
-@test 1 == 1
 @test test_isect_tet()
-
-@test 1 == 1
 
 function test_com()
     tet = Mesh(
@@ -54,12 +50,8 @@ function test_com()
             4 5
         ],
         [0.0, 0.0, 0.0, 0.0, 0.0],
-        #mass=1,
     )
-    com = tet.com
-    res = [1.0, 2.0, 3.0]
-    for i = 1:3
-        @test abs(res[i] - com[i] < 1e-6)
-    end
+    @test norm([1.0, 2.0, 3.0] - tet.com) < 1e-6
 end
+
 test_com()
