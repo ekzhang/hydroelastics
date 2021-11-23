@@ -168,7 +168,8 @@ end
 
 function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     """
-    compute overall pressure between two tets A[i], B[j] of objects A, B
+    compute overall force between two tets A[i], B[j] of objects A, B. 
+    return the force applied to A (in the direction of A.com - B.com)
     """
     total_pressure = 0
     normal = [0, 0, 0]
@@ -186,8 +187,11 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
                 total_pressure += res[k] * A.potentials[vtx_inds[k]]
             end
         end
-        normal = cross(intersection_polygon[:, 1] - intersection_polygon[:, 2], intersection_polygon[:, 1] - intersection_polygon[:, 3])
-        normal = normal/norm(normal)
+        normal = cross(
+            intersection_polygon[:, 1] - intersection_polygon[:, 2],
+            intersection_polygon[:, 1] - intersection_polygon[:, 3],
+        )
+        normal = normal / norm(normal)
         if dot(normal, A.com - B.com) < 0
             normal = -1 * normal
         end
@@ -196,9 +200,12 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
 end
 
 function mesh_force(A::Mesh, B::Mesh)
+    """
+    Computes force on mesh A due to contact with mesh B
+    """
     force = [0 0 0]
-    for i = 1 : A.m
-        for j = 1 : B.m
+    for i = 1:A.m
+        for j = 1:B.m
             force += tet_force(A, B, i, j)
         end
     end
