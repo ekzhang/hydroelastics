@@ -52,12 +52,14 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     function get_equations(coords, potentials)
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
+        print("mat = ", mat)
+        print("potentials = ", potentials)
         x = mat \ potentials
         return x
     end
 
-    a_pot = get_equations(coords_A, m1.potentials)
-    b_pot = get_equations(coords_B, m2.potentials)
+    a_pot = get_equations(coords_A, m1.potentials[m1.tets[1:4, a_face_idx]])
+    b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, a_face_idx]])
     intersection_eq = a_pot - b_pot  # intersection \cdot x = 0
     if norm(intersection_eq[1:3]) < 1e-6
         return []
@@ -85,6 +87,9 @@ function intersect_tets(m1, m2, a_face_idx, b_face_idx)
     isect_A = isect_tet_plane(intersection_eq, coords_A)
     isect_B = isect_tet_plane(intersection_eq, coords_B)
 
+    if (isect_A == []) || (isect_B == [])
+        return []
+    end
     xproj = false
     yproj = false
     zproj = false
@@ -196,3 +201,35 @@ mutable struct Object
 end
 
 export Mesh, Object, intersect_tets, pressure
+
+function get_cube(com)
+    """
+    returns a cube with center at com
+    """
+    com = com
+    cube_verts = [
+        com + [-1.0, -1.0, -1.0],
+        com + [-1.0, -1.0, 1.0],
+        com + [-1.0, 1.0, -1.0],
+        com + [-1.0, 1.0, 1.0],
+        com + [1.0, -1.0, -1.0],
+        com + [1.0, -1.0, 1.0],
+        com + [1.0, 1.0, -1.0],
+        com + [1.0, 1.0, 1.0],
+        com,
+    ]
+    cube_tets = [
+        1 4 1 1 1 1 8 4 8 7 4 8
+        2 2 2 5 3 5 4 3 7 6 8 6
+        3 3 6 6 7 7 7 7 6 5 2 2
+        9 9 9 9 9 9 9 9 9 9 9 9
+    ]
+    cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    cube = Mesh(
+        verts = cube_verts,
+        tets = cube_tets,
+        potentials = cube_pots,
+    )
+    cube
+end
+

@@ -1,6 +1,43 @@
 using Test
-using LinearAlgebra
 using Hydroelastics
+using LinearAlgebra
+
+function isect_cubes()
+    function get_cube(com)
+        """
+        returns a cube with center at com
+        """
+        cube_verts = com .+ [
+            -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
+            -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
+            -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
+        ]
+        cube_tets = [
+            1 4 1 1 1 1 8 4 8 7 4 8
+            2 2 2 5 3 5 4 3 7 6 8 6
+            3 3 6 6 7 7 7 7 6 5 2 2
+            9 9 9 9 9 9 9 9 9 9 9 9
+        ]
+        cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        cube = Mesh(
+            cube_verts,
+            cube_tets,
+            cube_pots,
+        )
+        cube
+    end
+    cu1 = get_cube([0.0, 0.0, 0.0])
+    cu2 = get_cube([0.5, 0.5, 0.5])
+
+    press = 0
+    for i = 1:12
+        for j = 1:12
+            press += pressure(cu1, cu2, i, j)
+        end
+    end
+    press
+end
+
 
 function test_isect_tet()
     tet1 = Mesh(
@@ -14,27 +51,29 @@ function test_isect_tet()
         [0.0, 0.0, 0.0, 1.0],
     )
 
-    points = intersect_tets(tet1, tet2, 1, 1)
-    expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
-
-    for i = 1:size(points, 2)
+    final_res = intersect_tets(tet1, tet2, 1, 1)
+    res = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
+    works = true
+    for i = 1:size(final_res, 2)
         # there must exist a j in res which is close
         found = false
-        for j in expected_points
-            if norm(points[:, i] - j) < 1e-4
+        for j in res
+            if norm(final_res[:, i] - j) < 1e-4
                 found = true
-                break
             end
         end
         if !found
-            return false
+            global works = false
         end
     end
-
-    true
+    works
 end
 
+@test isect_cubes()
+@test 1 == 1
 @test test_isect_tet()
+
+@test 1 == 1
 
 function test_com()
     tet = Mesh(
@@ -50,8 +89,12 @@ function test_com()
             4 5
         ],
         [0.0, 0.0, 0.0, 0.0, 0.0],
+        #mass=1,
     )
-    @test norm([1.0, 2.0, 3.0] - tet.com) < 1e-6
+    com = tet.com
+    res = [1.0, 2.0, 3.0]
+    for i = 1:3
+        @test abs(res[i] - com[i] < 1e-6)
+    end
 end
-
 test_com()
