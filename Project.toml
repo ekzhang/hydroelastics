@@ -5,12 +5,13 @@ version = "0.1.0"
 
 [deps]
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
+GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MeshCat = "283c5d60-a78f-5afe-a0af-af636b173e11"
+Polyhedra = "67491407-f73d-577b-9b50-8179a7c68029"
 RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
-
