@@ -113,7 +113,7 @@ end
 test_force()
 
 function isect_cubes()
-    function get_cube(com)
+    function get_cube(com::Vector{Float64})
         """
         returns a cube with center at com
         """
@@ -135,12 +135,7 @@ function isect_cubes()
     cu1 = get_cube([0.0, 0.0, 0.0])
     cu2 = get_cube([0.39103, 0.0232, 0.4312])
 
-    #println(mesh_force(cu1, cu2))
+    mesh_force(cu1, cu2)
 end
 
-# TODO: Fix runtime error.
-#  `ERROR: LoadError: BoundsError: attempt to access 3×1 Matrix{Float64} at index [1:3, 2]``
-
-# TODO: Fix runtime issue + test approximate equality with ~
-
-isect_cubes()
+@test isect_cubes() ≈ [-8.45374947, -4.40608135, -4.8481985]
