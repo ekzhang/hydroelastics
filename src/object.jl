@@ -84,19 +84,19 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     isect_A = isect_tet_plane(intersection_eq, coords_A)
     isect_B = isect_tet_plane(intersection_eq, coords_B)
 
-    if (isect_A == []) || (isect_B == [])
-        return []
+    if (isempty(isect_A) || (isempty(isect_B)))
+        return zeros(3, 0)
     end
     xproj = false
     yproj = false
     zproj = false
-    if intersection_eq[1] != 0
+    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-5
         twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
         xproj = true
-    elseif intersection_eq[2] != 0
+    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-5
         twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
         yproj = true
-    elseif intersection_eq[3] != 0
+    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-5
         twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
         zproj = true
     end
@@ -107,7 +107,13 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     PB = polyhedron(vrep(Bpoly'), lib)
     res = polyhedron(vrep(intersect(PA, PB)))
     all_points = hcat(points(res.vrep)...)
+    if isempty(all_points)
+        return zeros(3, 0)
+    end
     final_res = zeros(3, size(all_points, 2))
+    if size(all_points, 2) == 0
+        return zeros(3, 0)
+    end
     for i = 1:size(all_points, 2)
         if xproj
             final_res[2, i] = all_points[1, i]
@@ -143,6 +149,7 @@ function triangulate_polygon(vertices::Matrix{Float64})
     given out-of-order coordinates of vertices of a planar and convex polygon in a 3xN matrix, output a triangulation
     of the polygon
     """
+    #println("vertices", vertices)
     n = size(vertices)[2]
     com = [sum(vertices[i, :]) for i = 1:3] / n
     angles = [0.0]  # list of (angle, vtx index corresponding to angle)
@@ -150,6 +157,7 @@ function triangulate_polygon(vertices::Matrix{Float64})
     mags = [sqrt(dot(displacements[:, i], displacements[:, i])) for i = 1:n]
     ind = 2
     normal = cross(displacements[:, 1], displacements[:, ind])  # compute any normal to the plane
+    #println("displacements", displacements[:, 1], displacements[:, ind])
     while sqrt(dot(normal, normal)) < 0.000001 * mags[1] * mags[ind]
         ind += 1
         normal = cross(displacements[:, 1], displacements[:, ind])
@@ -157,7 +165,9 @@ function triangulate_polygon(vertices::Matrix{Float64})
     initial_disp = displacements[:, 1]
     for ind = 2:n
         disp = displacements[:, ind]
-        angle = acos(dot(disp, initial_disp) / (mags[1] * mags[ind]))
+        angle = acos(
+            clamp(dot(disp, initial_disp) / (mags[1] * mags[ind]), -(1 - 1e-6), (1 - 1e-6)),
+        )
         if dot(cross(disp, initial_disp), normal) < 0
             angle = 2 * pi - angle
         end
@@ -176,7 +186,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     total_pressure = 0
     normal = [0, 0, 0]
     intersection_polygon = intersect_tets(A, B, i, j)
-    if size(intersection_polygon)[1] > 0
+    if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]

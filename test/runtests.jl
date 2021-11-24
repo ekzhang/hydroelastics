@@ -133,9 +133,9 @@ function isect_cubes()
         Mesh(cube_verts, cube_tets, cube_pots)
     end
     cu1 = get_cube([0.0, 0.0, 0.0])
-    cu2 = get_cube([0.5, 0.5, 0.5])
+    cu2 = get_cube([0.39103, 0.0232, 0.4312])
 
-    mesh_force(cu1, cu2)
+    #println(mesh_force(cu1, cu2))
 end
 
 # TODO: Fix runtime error.
@@ -143,4 +143,4 @@ end
 
 # TODO: Fix runtime issue + test approximate equality with ~
 
-# isect_cubes()
+isect_cubes()
