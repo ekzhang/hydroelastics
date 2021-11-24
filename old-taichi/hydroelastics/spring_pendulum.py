@@ -1,6 +1,5 @@
 import taichi as ti
 from taichi_glsl import length, sqrt, cos, sin
-import numpy as np
 
 ti.init(arch=ti.gpu)
 
