@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v2
+      - uses: julia-actions/setup-julia@v1
         with:
-          python-version: "3.9"
+          version: "1.6"
 
       - uses: extractions/setup-just@v1
         with:
@@ -27,4 +27,4 @@ jobs:
 
       - run: just check
 
-      - run: just run --help
+      - run: just test
