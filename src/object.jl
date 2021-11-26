@@ -22,9 +22,9 @@ struct Mesh
 end
 
 function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
-    ```
+    """
     compute center of mass given coords of vertices and tets
-    ```
+    """
     # verts [3,n]; tets [4, m]
     tet_centers = Vector{Float64}[]
     vols = Vector{Float64}()
@@ -154,10 +154,8 @@ function triangulate_polygon(vertices::Matrix{Float64})
     while norm(normal) < 1e-6 * mags[1] * mags[ind]
         ind += 1
         if ind > n
-            println(ind)
             return zeros(3, 0)
         end
-        println(ind)
         normal = cross(displacements[:, 1], displacements[:, ind])
     end
     initial_disp = displacements[:, 1]
@@ -184,10 +182,11 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     total_pressure = 0.0
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
+    total_area = 0.0
     if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
         if isempty(triangles)
-            return [0.0, 0.0, 0.0]
+            return zeros(3)
         end
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]
@@ -197,6 +196,8 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
             total_pressure += sum(res .* A.potentials[vtx_inds])
+            total_area +=
+                0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
         end
         normal = cross(
             intersection_polygon[:, 1] - intersection_polygon[:, 2],
@@ -207,7 +208,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             normal = -1 * normal
         end
     end
-    total_pressure * normal
+    total_pressure * normal * total_area
 end
 
 function mesh_force(A::Mesh, B::Mesh)

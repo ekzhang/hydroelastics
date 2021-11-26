@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.1
+# v0.17.2
 
 using Markdown
 using InteractiveUtils
@@ -12,10 +12,10 @@ end
 
 # ╔═╡ daf02e8c-4cad-11ec-1211-07b7add5573d
 begin
-	using Revise
+    using Revise
     using Hydroelastics
     using LinearAlgebra
-	using Plots
+    using Plots
 end
 
 # ╔═╡ 36ac084d-c85c-488c-bd20-7a490fa471c9
@@ -24,7 +24,8 @@ function get_cube(com, sz)
     returns a cube with center at com
     """
     cube_verts =
-        com .+ sz * [
+        com .+
+        sz * [
             -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
             -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
             -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
@@ -43,15 +44,17 @@ end
 
 # ╔═╡ 22c3247a-7cf8-4cc3-b84f-8a510942d399
 begin
-	x = []
-	y = []
-	for i in LinRange(-1.0, 1.0, 300)
-		cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
-	    cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
-		append!(x,i)
-		append!(y,norm(mesh_force(cu1,cu2)))
-	end
-	plot(x,y)
+    x = []
+    y = []
+    for i in LinRange(-1.0, 1.0, 300)
+        #for i in LinRange(-0.1, 0.1, 9)
+        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
+        cu2 = get_cube([i, 0, 0], 1.0)
+        #cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
+        append!(x, i)
+        append!(y, norm(mesh_force(cu1, cu2)))
+    end
+    plot(x, y)
 end
 
 # ╔═╡ Cell order:
