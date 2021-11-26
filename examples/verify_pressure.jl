@@ -12,17 +12,19 @@ end
 
 # ╔═╡ daf02e8c-4cad-11ec-1211-07b7add5573d
 begin
+	using Revise
     using Hydroelastics
     using LinearAlgebra
+	using Plots
 end
 
 # ╔═╡ 36ac084d-c85c-488c-bd20-7a490fa471c9
-function get_cube(com)
+function get_cube(com, sz)
     """
     returns a cube with center at com
     """
     cube_verts =
-        com .+ [
+        com .+ sz * [
             -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
             -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
             -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
@@ -41,16 +43,15 @@ end
 
 # ╔═╡ 22c3247a-7cf8-4cc3-b84f-8a510942d399
 begin
-    cu1 = get_cube([0.0, 0.0, 0.0])
-    cu2 = get_cube([0.5, 0.5, 0.5])
-
-    press = 0
-    for i = 1:12
-        for j = 1:12
-            press += pressure(cu1, cu2, i, j)
-        end
-    end
-    press
+	x = []
+	y = []
+	for i in LinRange(-1.0, 1.0, 300)
+		cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
+	    cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
+		append!(x,i)
+		append!(y,norm(mesh_force(cu1,cu2)))
+	end
+	plot(x,y)
 end
 
 # ╔═╡ Cell order:
