@@ -51,7 +51,7 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     end
 
     a_pot = get_equations(coords_A, m1.potentials[m1.tets[1:4, a_face_idx]])
-    b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, a_face_idx]])
+    b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, b_face_idx]])
     intersection_eq = a_pot - b_pot  # intersection \cdot x = 0
     if norm(intersection_eq[1:3]) < 1e-6
         return zeros(3, 0)
