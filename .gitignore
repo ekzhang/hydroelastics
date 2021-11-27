@@ -1,8 +1,4 @@
 __pycache__/
-<<<<<<< HEAD
-*.png
-=======
 .pytest_cache/
 .vscode/
 *.png
->>>>>>> 12e0a94420765a9932ef54166d059b0e50be58ab
