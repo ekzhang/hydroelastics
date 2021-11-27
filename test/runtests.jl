@@ -138,4 +138,4 @@ function isect_cubes()
     mesh_force(cu1, cu2)
 end
 
-# @test isect_cubes() ≈ [-8.45374947, -4.40608135, -4.8481985] this computation is wrong
+@test isect_cubes() ≈ [-1.61292049, -1.02239333, -0.63121562]
