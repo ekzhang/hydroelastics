@@ -73,6 +73,11 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
                 end
             end
         end
+        for i = 1 : 4 # there might be a better way to deal w vtx on plane cases
+            if abs(dot_prods[i]) < 1e-9 * norm(coords[:, i]) * norm(intersection_eq)
+                push!(intersection_points, coords[:, i])
+            end
+        end
         return hcat(intersection_points...)
     end
 
