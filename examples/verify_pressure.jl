@@ -16,7 +16,9 @@ begin
     using Hydroelastics
     using LinearAlgebra
     using Plots
+	using Polyhedra
 	#using PlutoUI
+	using MeshCat
 end
 
 # ╔═╡ 36ac084d-c85c-488c-bd20-7a490fa471c9
@@ -49,16 +51,23 @@ begin
     y = []
 	all_forces = []
 	specific_tet_force = []
+	vis = Visualizer()
+	m1 = polyhedron(vrep([-1.0 -1.0 -1.0 0.0; 1.0 -1.0 1.0 0.0; 1.0 1.0 -1.0 0.0]'))
+	setobject!(vis, Polyhedra.Mesh(m1))
+	IJuliaCell(vis)
 	#plot([1,2,3], [4,5,6])
 	#with_terminal() do 
-	    for i in LinRange(-1.0, 1.0, 301)
+	    for i in LinRange(-3.0, 3.0, 301)
 	        #for i in LinRange(-0.1, 0.1, 9)
 	        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
 	        cu2 = get_cube([i, 0.0, 0.0], 1.0)
 			push!(x, i)
 	        #cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
 	        #push!(all_forces, norm(mesh_force(cu1, cu2)))
-			push!(specific_tet_force, tet_force(cu1, cu2, 5, 10)[1])
+			if abs(i) < 1e-5
+				println("intersect tets", intersect_tets(cu1, cu2, 2, 11))
+			end
+			#push!(specific_tet_force, tet_force(cu1, cu2, 2, 11)[1])
 	    end
 		z = []
 		#for i in 5:5

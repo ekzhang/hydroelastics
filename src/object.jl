@@ -42,6 +42,8 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
+    println("coords_A", coords_A)
+    println("coords_B", coords_B)
 
     function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
@@ -57,87 +59,115 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
         return zeros(3, 0)
     end
 
-    function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
-        ones_arr = ones(size(coords, 2), 1)
-        mat = hcat(transpose(coords), ones_arr)
-        dot_prods = mat * intersection_eq
-        intersection_points = Vector{Float64}[]
-        for i = 1:4
-            for j = i+1:4
-                if dot_prods[i] * dot_prods[j] < 0.0
-                    frac = dot_prods[i] / (dot_prods[i] - dot_prods[j])
-                    push!(
-                        intersection_points,
-                        (1.0 - frac) * coords[:, i] + frac * coords[:, j],
-                    )
-                end
-            end
-        end
-        return hcat(intersection_points...)
-    end
+    tet_A = polyhedron(vrep(coords_A'), lib)
+    tet_B = polyhedron(vrep(coords_B'), lib)
 
-    isect_A = isect_tet_plane(intersection_eq, coords_A)
-    isect_B = isect_tet_plane(intersection_eq, coords_B)
 
-    if (isempty(isect_A) || (isempty(isect_B)))
-        return zeros(3, 0)
-    end
-    xproj = false
-    yproj = false
-    zproj = false
-    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-3
-        twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
-        xproj = true
-    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-3
-        twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
-        yproj = true
-    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-3
-        twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
-        zproj = true
-    end
+    intersection = intersect(tet_A, tet_B)
 
-    Apoly = twoDproj * isect_A
-    Bpoly = twoDproj * isect_B
-    PA = polyhedron(vrep(Apoly'), lib)
-    PB = polyhedron(vrep(Bpoly'), lib)
-    res = polyhedron(vrep(intersect(PA, PB)))
-    all_points = hcat(points(res.vrep)...)
-    if isempty(all_points)
+    affine_subspace = hrep([HyperPlane(intersection_eq[1:3], -intersection_eq[4])])
+
+    intersection_2 = intersect(intersection, affine_subspace)
+    #res = polyhedron(vrep(intersect(PA, PB)))
+    #all_points = hcat(points(res.vrep)...)
+    all_points = hcat(points(polyhedron(vrep(intersection_2)).vrep)...)
+    #println(all_points)
+    if size(all_points, 2) < 3
         return zeros(3, 0)
+    else
+        return all_points
     end
-    final_res = zeros(3, size(all_points, 2))
-    if size(all_points, 2) <= 2
-        return zeros(3, 0)
-    end
-    for i = 1:size(all_points, 2)
-        if xproj
-            final_res[2, i] = all_points[1, i]
-            final_res[3, i] = all_points[2, i]
-            final_res[1, i] =
-                (
-                    -intersection_eq[4] - intersection_eq[2] * final_res[2, i] -
-                    intersection_eq[1] * final_res[1, i]
-                ) / intersection_eq[1]
-        elseif yproj
-            final_res[1, i] = all_points[1, i]
-            final_res[3, i] = all_points[2, i]
-            final_res[2, i] =
-                (
-                    -intersection_eq[4] - intersection_eq[3] * final_res[3, i] -
-                    intersection_eq[1] * final_res[1, i]
-                ) / intersection_eq[2]
-        elseif zproj
-            final_res[1, i] = all_points[1, i]
-            final_res[2, i] = all_points[2, i]
-            final_res[3, i] =
-                (
-                    -intersection_eq[4] - intersection_eq[1] * final_res[1, i] -
-                    intersection_eq[2] * final_res[2, i]
-                ) / intersection_eq[3]
-        end
-    end
-    final_res
 end
+
+#for halfspace in allhalfspaces(intersection_2)
+#    println(halfspace)
+#end
+
+
+#intersection_final = hcat(polyhedron(vrep(intersect(intersection, HyperPlane(intersection_eq[1:3], -intersection_eq[4]))...)))
+
+
+#     function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
+#         ones_arr = ones(size(coords, 2), 1)
+#         mat = hcat(transpose(coords), ones_arr)
+#         dot_prods = mat * intersection_eq
+#         intersection_points = Vector{Float64}[]
+#         for i = 1:4
+#             for j = i+1:4
+#                 if dot_prods[i] * dot_prods[j] < 0.0
+#                     frac = dot_prods[i] / (dot_prods[i] - dot_prods[j])
+#                     push!(
+#                         intersection_points,
+#                         (1.0 - frac) * coords[:, i] + frac * coords[:, j],
+#                     )
+#                 end
+#             end
+#         end
+#         return hcat(intersection_points...)
+#     end
+
+#     isect_A = isect_tet_plane(intersection_eq, coords_A)
+#     isect_B = isect_tet_plane(intersection_eq, coords_B)
+
+#     if (isempty(isect_A) || (isempty(isect_B)))
+#         return zeros(3, 0)
+#     end
+#     xproj = false
+#     yproj = false
+#     zproj = false
+#     if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-3
+#         twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
+#         xproj = true
+#     elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-3
+#         twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
+#         yproj = true
+#     elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-3
+#         twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
+#         zproj = true
+#     end
+
+#     Apoly = twoDproj * isect_A
+#     Bpoly = twoDproj * isect_B
+#     PA = polyhedron(vrep(Apoly'), lib)
+#     PB = polyhedron(vrep(Bpoly'), lib)
+#     res = polyhedron(vrep(intersect(PA, PB)))
+#     all_points = hcat(points(res.vrep)...)
+#     if isempty(all_points)
+#         return zeros(3, 0)
+#     end
+#     final_res = zeros(3, size(all_points, 2))
+#     if size(all_points, 2) <= 2
+#         return zeros(3, 0)
+#     end
+#     for i = 1:size(all_points, 2)
+#         if xproj
+#             final_res[2, i] = all_points[1, i]
+#             final_res[3, i] = all_points[2, i]
+#             final_res[1, i] =
+#                 (
+#                     -intersection_eq[4] - intersection_eq[2] * final_res[2, i] -
+#                     intersection_eq[1] * final_res[1, i]
+#                 ) / intersection_eq[1]
+#         elseif yproj
+#             final_res[1, i] = all_points[1, i]
+#             final_res[3, i] = all_points[2, i]
+#             final_res[2, i] =
+#                 (
+#                     -intersection_eq[4] - intersection_eq[3] * final_res[3, i] -
+#                     intersection_eq[1] * final_res[1, i]
+#                 ) / intersection_eq[2]
+#         elseif zproj
+#             final_res[1, i] = all_points[1, i]
+#             final_res[2, i] = all_points[2, i]
+#             final_res[3, i] =
+#                 (
+#                     -intersection_eq[4] - intersection_eq[1] * final_res[1, i] -
+#                     intersection_eq[2] * final_res[2, i]
+#                 ) / intersection_eq[3]
+#         end
+#     end
+#     final_res
+# end
 
 function triangulate_polygon(vertices::Matrix{Float64})
     """
