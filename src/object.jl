@@ -220,10 +220,10 @@ function mesh_force(A::Mesh, B::Mesh)
     """
     Computes force on mesh A due to contact with mesh B
     """
-    force = []
+    force = zeros(3)
     for i = 1:A.m
         for j = 1:B.m
-            push!(force, tet_force(A, B, i, j))
+            force += tet_force(A, B, i, j)
         end
     end
     force
