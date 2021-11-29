@@ -64,11 +64,11 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
         intersection_points = Vector{Float64}[]
         for i = 1:4
             for j = i+1:4
-                if dot_prods[i] * dot_prods[j] < 0
+                if dot_prods[i] * dot_prods[j] < 0.0
                     frac = dot_prods[i] / (dot_prods[i] - dot_prods[j])
                     push!(
                         intersection_points,
-                        (1 - frac) * coords[:, i] + frac * coords[:, j],
+                        (1.0 - frac) * coords[:, i] + frac * coords[:, j],
                     )
                 end
             end
@@ -85,13 +85,13 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     xproj = false
     yproj = false
     zproj = false
-    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-5
+    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
         xproj = true
-    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-5
+    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
         yproj = true
-    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-5
+    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
         zproj = true
     end
@@ -179,10 +179,9 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     compute overall force between two tets A[i], B[j] of objects A, B.
     return the force applied to A (in the direction of A.com - B.com)
     """
-    total_pressure = 0.0
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
-    total_area = 0.0
+    total_force = 0.0
     if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
         if isempty(triangles)
@@ -195,9 +194,10 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
-            total_pressure += sum(res .* A.potentials[vtx_inds])
-            total_area +=
+            pressure = sum(res .* A.potentials[vtx_inds])
+            area =
                 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
+            total_force += pressure * area
         end
         normal = cross(
             intersection_polygon[:, 1] - intersection_polygon[:, 2],
@@ -208,17 +208,17 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             normal = -1 * normal
         end
     end
-    total_pressure * normal * total_area
+    total_force * normal
 end
 
 function mesh_force(A::Mesh, B::Mesh)
     """
     Computes force on mesh A due to contact with mesh B
     """
-    force = zeros(3)
+    force = []
     for i = 1:A.m
         for j = 1:B.m
-            force += tet_force(A, B, i, j)
+            push!(force, tet_force(A, B, i, j))
         end
     end
     force
