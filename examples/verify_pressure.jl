@@ -40,7 +40,7 @@ function get_cube(com, sz)
         9 9 9 9 9 9 9 9 9 9 9 9
     ]
     cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    cube = Mesh(cube_verts, cube_tets, cube_pots)
+    cube = Hydroelastics.Mesh(cube_verts, cube_tets, cube_pots)
     cube
 end
 
@@ -51,10 +51,13 @@ begin
     y = []
 	all_forces = []
 	specific_tet_force = []
-	vis = Visualizer()
-	m1 = polyhedron(vrep([-1.0 -1.0 -1.0 0.0; 1.0 -1.0 1.0 0.0; 1.0 1.0 -1.0 0.0]'))
-	setobject!(vis, Polyhedra.Mesh(m1))
-	IJuliaCell(vis)
+	#vis = Visualizer()
+	#m1 = polyhedron(vrep([-1.0 -1.0 -1.0 0.0; 1.0 -1.0 1.0 0.0; 1.0 1.0 -1.0 0.0]'))
+	#m2 = polyhedron(vrep([-1.0 1.0 -1.0 0.0; 1.0 1.0 -1.0 0.0; 1.0 1.0 1.0 0.0]'))
+	#setobject!(vis, Polyhedra.Mesh(m1))
+	#setobject!(vis, Polyhedra.Mesh(m2))
+
+	#IJuliaCell(vis)
 	#plot([1,2,3], [4,5,6])
 	#with_terminal() do 
 	    for i in LinRange(-3.0, 3.0, 301)
@@ -62,10 +65,21 @@ begin
 	        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
 	        cu2 = get_cube([i, 0.0, 0.0], 1.0)
 			push!(x, i)
+			
 	        #cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
-	        #push!(all_forces, norm(mesh_force(cu1, cu2)))
+	        push!(all_forces, norm(mesh_force(cu1, cu2)))
 			if abs(i) < 1e-5
-				println("intersect tets", intersect_tets(cu1, cu2, 2, 11))
+				for i in 1:12
+					for j in 1:12
+						if i == j
+							@assert (norm(tet_force(cu1, cu2, i, i)) < 1e-5)
+						else
+							@assert (norm(tet_force(cu1, cu2, i, j) + tet_force(cu1, cu2, j, i)) < 1e-5)
+						end
+					end
+				end
+				println("intersect tets ", tet_force(cu1, cu2, 2, 8))
+				println("intersect tets ", tet_force(cu1, cu2, 8, 2))
 			end
 			#push!(specific_tet_force, tet_force(cu1, cu2, 2, 11)[1])
 	    end
@@ -81,7 +95,7 @@ begin
 		#end
 		#plot(x, specific_tet_force)
 	#end
-	plot(x, specific_tet_force)
+	plot(x, all_forces)
 end
 
 # ╔═╡ d15ae364-c519-48db-838f-4f58226c1197

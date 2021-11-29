@@ -42,8 +42,8 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
-    println("coords_A", coords_A)
-    println("coords_B", coords_B)
+    #println("coords_A", coords_A)
+    #println("coords_B", coords_B)
 
     function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
@@ -55,22 +55,25 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     a_pot = get_equations(coords_A, m1.potentials[m1.tets[1:4, a_face_idx]])
     b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, b_face_idx]])
     intersection_eq = a_pot - b_pot  # intersection \cdot x = 0
-    if norm(intersection_eq[1:3]) < 1e-6
-        return zeros(3, 0)
-    end
 
     tet_A = polyhedron(vrep(coords_A'), lib)
     tet_B = polyhedron(vrep(coords_B'), lib)
 
 
     intersection = intersect(tet_A, tet_B)
+    #println("intersection ", intersection)
+    #println("intersection_eq ", intersection_eq)
+    if norm(intersection_eq[1:3]) < 1e-6
+        return zeros(3, 0)
+    else
+        affine_subspace = hrep([HyperPlane(intersection_eq[1:3], -intersection_eq[4])])
+        intersection = intersect(intersection, affine_subspace)
+    end
+    all_points = hcat(points(polyhedron(vrep(intersection)).vrep)...)
 
-    affine_subspace = hrep([HyperPlane(intersection_eq[1:3], -intersection_eq[4])])
-
-    intersection_2 = intersect(intersection, affine_subspace)
+    #intersection_2 = intersect(intersection, affine_subspace)
     #res = polyhedron(vrep(intersect(PA, PB)))
     #all_points = hcat(points(res.vrep)...)
-    all_points = hcat(points(polyhedron(vrep(intersection_2)).vrep)...)
     #println(all_points)
     if size(all_points, 2) < 3
         return zeros(3, 0)
@@ -219,6 +222,8 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
         end
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]
+        Acom = mean(eachcol(vtx_coords))
+        Bcom = mean(eachcol(B.verts[:, B.tets[:, j]]))
         vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
         for xyz in eachcol(triangles)
             vtxs = intersection_polygon[:, xyz]
@@ -234,7 +239,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             intersection_polygon[:, 1] - intersection_polygon[:, 3],
         )
         normal = normal / norm(normal)
-        if dot(normal, A.com - B.com) < 0
+        if dot(normal, Acom - Bcom) < 0
             normal = -1 * normal
         end
     end
@@ -245,10 +250,10 @@ function mesh_force(A::Mesh, B::Mesh)
     """
     Computes force on mesh A due to contact with mesh B
     """
-    force = []
+    force = zeros(3)
     for i = 1:A.m
         for j = 1:B.m
-            push!(force, tet_force(A, B, i, j))
+            force += tet_force(A, B, i, j)
         end
     end
     force
