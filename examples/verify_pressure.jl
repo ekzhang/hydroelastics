@@ -12,17 +12,21 @@ end
 
 # ╔═╡ daf02e8c-4cad-11ec-1211-07b7add5573d
 begin
+    using Revise
     using Hydroelastics
     using LinearAlgebra
+    using Plots
+    #using PlutoUI
 end
 
 # ╔═╡ 36ac084d-c85c-488c-bd20-7a490fa471c9
-function get_cube(com)
+function get_cube(com, sz)
     """
     returns a cube with center at com
     """
     cube_verts =
-        com .+ [
+        com .+
+        sz * [
             -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
             -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
             -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
@@ -41,20 +45,42 @@ end
 
 # ╔═╡ 22c3247a-7cf8-4cc3-b84f-8a510942d399
 begin
-    cu1 = get_cube([0.0, 0.0, 0.0])
-    cu2 = get_cube([0.5, 0.5, 0.5])
-
-    press = 0
-    for i = 1:12
-        for j = 1:12
-            press += pressure(cu1, cu2, i, j)
-        end
+    x = []
+    y = []
+    all_forces = []
+    specific_tet_force = []
+    #plot([1,2,3], [4,5,6])
+    #with_terminal() do 
+    for i in LinRange(-1.0, 1.0, 301)
+        #for i in LinRange(-0.1, 0.1, 9)
+        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
+        cu2 = get_cube([i, 0.0, 0.0], 1.0)
+        push!(x, i)
+        #cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
+        #push!(all_forces, norm(mesh_force(cu1, cu2)))
+        push!(specific_tet_force, tet_force(cu1, cu2, 5, 10)[1])
     end
-    press
+    z = []
+    #for i in 5:5
+    #	for j in 10:10
+    #		ys = [ele[12 * i + j][1] for ele in all_forces]
+    #print(ys)
+    #		print(size(ys))
+    #		z = ys
+    #		print(size(x))
+    #	end
+    #end
+    #plot(x, specific_tet_force)
+    #end
+    plot(x, specific_tet_force)
 end
+
+# ╔═╡ d15ae364-c519-48db-838f-4f58226c1197
+plot([1, 2, 3], [4, 5, 6])
 
 # ╔═╡ Cell order:
 # ╠═74025e80-8603-4254-a4d1-9d11e656b689
 # ╠═daf02e8c-4cad-11ec-1211-07b7add5573d
 # ╠═36ac084d-c85c-488c-bd20-7a490fa471c9
 # ╠═22c3247a-7cf8-4cc3-b84f-8a510942d399
+# ╠═d15ae364-c519-48db-838f-4f58226c1197

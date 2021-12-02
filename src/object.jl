@@ -22,9 +22,9 @@ struct Mesh
 end
 
 function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
-    ```
+    """
     compute center of mass given coords of vertices and tets
-    ```
+    """
     # verts [3,n]; tets [4, m]
     tet_centers = Vector{Float64}[]
     vols = Vector{Float64}()
@@ -51,7 +51,7 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     end
 
     a_pot = get_equations(coords_A, m1.potentials[m1.tets[1:4, a_face_idx]])
-    b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, a_face_idx]])
+    b_pot = get_equations(coords_B, m2.potentials[m2.tets[1:4, b_face_idx]])
     intersection_eq = a_pot - b_pot  # intersection \cdot x = 0
     if norm(intersection_eq[1:3]) < 1e-6
         return zeros(3, 0)
@@ -64,13 +64,18 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
         intersection_points = Vector{Float64}[]
         for i = 1:4
             for j = i+1:4
-                if dot_prods[i] * dot_prods[j] < 0
+                if dot_prods[i] * dot_prods[j] < 0.0
                     frac = dot_prods[i] / (dot_prods[i] - dot_prods[j])
                     push!(
                         intersection_points,
-                        (1 - frac) * coords[:, i] + frac * coords[:, j],
+                        (1.0 - frac) * coords[:, i] + frac * coords[:, j],
                     )
                 end
+            end
+        end
+        for i = 1:4 # there might be a better way to deal w vtx on plane cases
+            if abs(dot_prods[i]) < 1e-9 * norm(coords[:, i]) * norm(intersection_eq)
+                push!(intersection_points, coords[:, i])
             end
         end
         return hcat(intersection_points...)
@@ -85,13 +90,13 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
     xproj = false
     yproj = false
     zproj = false
-    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-5
+    if abs(intersection_eq[1]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [0.0 1.0 0.0; 0.0 0.0 1.0]
         xproj = true
-    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-5
+    elseif abs(intersection_eq[2]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [1.0 0.0 0.0; 0.0 0.0 1.0]
         yproj = true
-    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-5
+    elseif abs(intersection_eq[3]) / norm(intersection_eq[1:3]) > 1e-3
         twoDproj = [1.0 0.0 0.0; 0.0 1.0 0.0]
         zproj = true
     end
@@ -106,7 +111,7 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
         return zeros(3, 0)
     end
     final_res = zeros(3, size(all_points, 2))
-    if size(all_points, 2) == 0
+    if size(all_points, 2) <= 2
         return zeros(3, 0)
     end
     for i = 1:size(all_points, 2)
@@ -153,13 +158,16 @@ function triangulate_polygon(vertices::Matrix{Float64})
     normal = cross(displacements[:, 1], displacements[:, ind])  # compute any normal to the plane
     while norm(normal) < 1e-6 * mags[1] * mags[ind]
         ind += 1
+        if ind > n
+            return zeros(3, 0)
+        end
         normal = cross(displacements[:, 1], displacements[:, ind])
     end
     initial_disp = displacements[:, 1]
     for ind = 2:n
         disp = displacements[:, ind]
         angle = acos(
-            clamp(dot(disp, initial_disp) / (mags[1] * mags[ind]), -(1 - 1e-6), (1 - 1e-6)),
+            clamp(dot(disp, initial_disp) / (mags[1] * mags[ind]), -(1 - 1e-9), (1 - 1e-9)),
         )
         if dot(cross(disp, initial_disp), normal) < 0
             angle = 2 * pi - angle
@@ -176,11 +184,14 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
     compute overall force between two tets A[i], B[j] of objects A, B.
     return the force applied to A (in the direction of A.com - B.com)
     """
-    total_pressure = 0.0
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
+    total_force = 0.0
     if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
+        if isempty(triangles)
+            return zeros(3)
+        end
         vtx_inds = A.tets[:, i]
         vtx_coords = A.verts[:, vtx_inds]
         vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
@@ -188,7 +199,9 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
-            total_pressure += sum(res .* A.potentials[vtx_inds])
+            pressure = sum(res .* A.potentials[vtx_inds])
+            area = 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
+            total_force += pressure * area
         end
         normal = cross(
             intersection_polygon[:, 1] - intersection_polygon[:, 2],
@@ -199,7 +212,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             normal = -1 * normal
         end
     end
-    total_pressure * normal
+    total_force * normal
 end
 
 function mesh_force(A::Mesh, B::Mesh)
