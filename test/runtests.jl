@@ -138,4 +138,4 @@ function isect_cubes()
     mesh_force(cu1, cu2)
 end
 
-@test isect_cubes() ≈ [-1.61292049, -1.02239333, -0.63121562]
+@test norm(isect_cubes() - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6

@@ -73,7 +73,7 @@ function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64
                 end
             end
         end
-        for i = 1 : 4 # there might be a better way to deal w vtx on plane cases
+        for i = 1:4 # there might be a better way to deal w vtx on plane cases
             if abs(dot_prods[i]) < 1e-9 * norm(coords[:, i]) * norm(intersection_eq)
                 push!(intersection_points, coords[:, i])
             end
@@ -200,8 +200,7 @@ function tet_force(A::Mesh, B::Mesh, i::Int64, j::Int64)
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
             pressure = sum(res .* A.potentials[vtx_inds])
-            area =
-                0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
+            area = 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
             total_force += pressure * area
         end
         normal = cross(
