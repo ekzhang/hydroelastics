@@ -37,9 +37,19 @@ function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
     sum(tet_centers .* vols) / sum(vols)
 end
 
+function volume(mesh::Mesh)
+    values = mesh.verts[:, mesh.tets]
+    volume = 0.0
+    for tet_values in eachslice(values, dims = 3)
+        a, b, c, d = eachcol(tet_values)
+        # compute triple product
+        volume += abs(dot(cross(b - a, c - a), d - a)) / 6.0
+    end
+    volume
+end
+
 function intersect_tets(m1::Mesh, m2::Mesh, a_face_idx::Int64, b_face_idx::Int64)
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
-    # TODO: Include poses
     coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
     coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
 
@@ -234,4 +244,4 @@ mutable struct Object
     #frame::CartesianFrame3D
 end
 
-export Mesh, Object, intersect_tets, triangulate_polygon, tet_force, mesh_force
+export Mesh, Object, volume, intersect_tets, triangulate_polygon, tet_force, mesh_force

@@ -1,110 +1,53 @@
-# adapted from https://observablehq.com/@mourner/fast-icosphere-mesh
-function icosphere(order::Int64)
+# This package contains implementations of common shapes, which can be used to
+# construct `Mesh` types from those shapes.
+
+"""
+Utility function for constructing an icosphere triangle mesh.
+
+Adapted from https://observablehq.com/@mourner/fast-icosphere-mesh
+"""
+function make_icosphere_mesh(order::Int64)
     # set up a 20-triangle icosahedron
     f = (1 + 5^0.5) / 2
     T = 4^order
 
     vertices = zeros((10 * T + 2) * 3)
-    vertices[1:36] = [
-        -1,
-        f,
-        0,
-        1,
-        f,
-        0,
-        -1,
-        -f,
-        0,
-        1,
-        -f,
-        0,
-        0,
-        -1,
-        f,
-        0,
-        1,
-        f,
-        0,
-        -1,
-        -f,
-        0,
-        1,
-        -f,
-        f,
-        0,
-        -1,
-        f,
-        0,
-        1,
-        -f,
-        0,
-        -1,
-        -f,
-        0,
-        1,
-    ]
-    triangles = [
-        1,
-        12,
-        6,
-        1,
-        6,
-        2,
-        1,
-        2,
-        8,
-        1,
-        8,
-        11,
-        1,
-        11,
-        12,
-        12,
-        11,
-        3,
-        6,
-        12,
-        5,
-        2,
-        6,
-        10,
-        8,
-        2,
-        9,
-        11,
-        8,
-        7,
-        4,
-        10,
-        5,
-        4,
-        5,
-        3,
-        4,
-        3,
-        7,
-        4,
-        7,
-        9,
-        4,
-        9,
-        10,
-        10,
-        9,
-        2,
-        5,
-        10,
-        6,
-        3,
-        5,
-        12,
-        7,
-        3,
-        11,
-        9,
-        7,
-        8,
-    ]
+    vertices[1:36] = vec([
+        -1 f 0
+        1 f 0
+        -1 -f 0
+        1 -f 0
+        0 -1 f
+        0 1 f
+        0 -1 -f
+        0 1 -f
+        f 0 -1
+        f 0 1
+        -f 0 -1
+        -f 0 1
+    ]')
+    triangles = vec([
+        1 12 6
+        1 6 2
+        1 2 8
+        1 8 11
+        1 11 12
+        12 11 3
+        6 12 5
+        2 6 10
+        8 2 9
+        11 8 7
+        4 10 5
+        4 5 3
+        4 3 7
+        4 7 9
+        4 9 10
+        10 9 2
+        5 10 6
+        3 5 12
+        7 3 11
+        9 7 8
+    ]')
 
     v = 13
     midCache = (order == 0) ? nothing : Dict() # midpoint vertices cache to avoid duplicating shared vertices
@@ -160,7 +103,21 @@ function icosphere(order::Int64)
         vertices[i+2] *= m
         vertices[i+3] *= m
     end
-    return (vertices, triangles)
+    reshape(vertices, 3, :), reshape(triangles, 3, :)
 end
 
-print(icosphere(1))
+"""
+Create an icosphere as a tetrahedral mesh, with potential 1 at the boundary.
+"""
+function make_icosphere(order::Int64)
+    verts, tris = make_icosphere_mesh(order)
+    points::Matrix{Float64} = [verts [0; 0; 0]] # add the origin
+    num_points = size(points, 2)
+    tets::Matrix{Int64} = [tris; repeat([num_points], 1, size(tris, 2))]
+    @assert size(tets, 1) == 4 "sanity check tets are in the right format"
+    potentials = ones(Float64, num_points)
+    potentials[end] = 0.0
+    Mesh(points, tets, potentials)
+end
+
+export make_icosphere
