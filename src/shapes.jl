@@ -12,42 +12,46 @@ function make_icosphere_mesh(order::Int64)
     T = 4^order
 
     vertices = zeros((10 * T + 2) * 3)
-    vertices[1:36] = vec([
-        -1 f 0
-        1 f 0
-        -1 -f 0
-        1 -f 0
-        0 -1 f
-        0 1 f
-        0 -1 -f
-        0 1 -f
-        f 0 -1
-        f 0 1
-        -f 0 -1
-        -f 0 1
-    ]')
-    triangles = vec([
-        1 12 6
-        1 6 2
-        1 2 8
-        1 8 11
-        1 11 12
-        12 11 3
-        6 12 5
-        2 6 10
-        8 2 9
-        11 8 7
-        4 10 5
-        4 5 3
-        4 3 7
-        4 7 9
-        4 9 10
-        10 9 2
-        5 10 6
-        3 5 12
-        7 3 11
-        9 7 8
-    ]')
+    vertices[1:36] = vec(
+        [
+            -1 f 0
+            1 f 0
+            -1 -f 0
+            1 -f 0
+            0 -1 f
+            0 1 f
+            0 -1 -f
+            0 1 -f
+            f 0 -1
+            f 0 1
+            -f 0 -1
+            -f 0 1
+        ]',
+    )
+    triangles = vec(
+        [
+            1 12 6
+            1 6 2
+            1 2 8
+            1 8 11
+            1 11 12
+            12 11 3
+            6 12 5
+            2 6 10
+            8 2 9
+            11 8 7
+            4 10 5
+            4 5 3
+            4 3 7
+            4 7 9
+            4 9 10
+            10 9 2
+            5 10 6
+            3 5 12
+            7 3 11
+            9 7 8
+        ]',
+    )
 
     v = 13
     midCache = (order == 0) ? nothing : Dict() # midpoint vertices cache to avoid duplicating shared vertices

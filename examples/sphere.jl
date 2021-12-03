@@ -32,7 +32,7 @@ sphere = make_icosphere(3)
 
 # ╔═╡ 539ed9a3-71d4-4da6-bc46-743718018abd
 begin
-	local material = MeshPhongMaterial(color=RGBA(0.3, 0.1, 0.7, 1.0))
+    local material = MeshPhongMaterial(color = RGBA(0.3, 0.1, 0.7, 1.0))
     setobject!(vis, mesh_to_obj(sphere), material)
     settransform!(vis, Translation(0, 0, 1.0))
 end

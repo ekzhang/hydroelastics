@@ -129,4 +129,3 @@ end
     sphere = make_icosphere(5)
     @test abs(volume(sphere) - 4pi / 3) < 0.0025
 end
-
