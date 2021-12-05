@@ -12,5 +12,6 @@ using DiffOpt, GLPK
 include("object.jl")
 include("shapes.jl")
 include("rendering.jl")
+include("forces.jl")
 
 end

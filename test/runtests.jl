@@ -22,7 +22,7 @@ using LinearAlgebra
         [0.0, 0.0, 0.0, 1.0],
     )
 
-    points = intersect_tets(tet1, tet2, 1, 1)
+    points = Hydroelastics.intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
 
     for p in eachcol(points)
@@ -70,7 +70,7 @@ end
         3 6 4 2
         6 4 2 5
     ]
-    @test triangulate_polygon(polygon) == result
+    @test Hydroelastics.triangulate_polygon(polygon) == result
 end
 
 @testset "mesh forces" begin
@@ -93,7 +93,7 @@ end
         [0.0, 0.0, 0.0, 1.0],
     )
 
-    force = tet_force(tet1, tet2, 1, 1)
+    force = Hydroelastics.tet_force(tet1, tet2, 1, 1)
     # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
     # so the weights on the vtxs of A should be .033, .033, .033, .9
     expected_force = [0, 0, -0.0045]
@@ -121,7 +121,7 @@ end
     cu1 = get_cube([0.0, 0.0, 0.0])
     cu2 = get_cube([0.39103, 0.0232, 0.4312])
 
-    force_cubes = mesh_force(cu1, cu2)
+    force_cubes = compute_force(cu1, cu2)
     @test norm(force_cubes - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6
 end
 

@@ -121,7 +121,7 @@ function make_icosphere(order::Int64)
     @assert size(tets, 1) == 4 "sanity check tets are in the right format"
     potentials = ones(Float64, num_points)
     potentials[end] = 0.0
-    Mesh(points, tets, potentials)
+    Object(Mesh(points, tets, potentials))
 end
 
 export make_icosphere
