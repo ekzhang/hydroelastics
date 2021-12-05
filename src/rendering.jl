@@ -7,7 +7,7 @@ function render_obj(obj::Object)::MeshFileGeometry
     for (a, b, c, d) in eachcol(obj.mesh.tets)
         for (x, y, z) in [(a, b, c), (b, c, d), (c, d, a), (d, a, b)]
             # Only include faces with potential 1, to get the outer surface.
-            if obj.mesh.potentials[[x, y, z]] ≈ [1, 1, 1]
+            if obj.mesh.potentials[[x, y, z]] ≈ [0, 0, 0]
                 push!(lines, "f $x $y $z")
             end
         end

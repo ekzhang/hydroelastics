@@ -111,7 +111,7 @@ function make_icosphere_mesh(order::Int64)
 end
 
 """
-Create an icosphere as a tetrahedral mesh, with potential 1 at the boundary.
+Create an icosphere as a tetrahedral mesh, with potential 0 at the boundary.
 """
 function make_icosphere(order::Int64)
     verts, tris = make_icosphere_mesh(order)
@@ -119,8 +119,8 @@ function make_icosphere(order::Int64)
     num_points = size(points, 2)
     tets::Matrix{Int64} = [tris; repeat([num_points], 1, size(tris, 2))]
     @assert size(tets, 1) == 4 "sanity check tets are in the right format"
-    potentials = ones(Float64, num_points)
-    potentials[end] = 0.0
+    potentials = zeros(Float64, num_points)
+    potentials[end] = 1.0
     Object(Mesh(points, tets, potentials))
 end
 
