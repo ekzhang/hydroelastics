@@ -4,7 +4,8 @@ using LinearAlgebra
 using StaticArrays
 
 @testset "tet intersection" begin
-    tet1 = Mesh(
+    print("hello")
+    tet1 = Object(Mesh(
         [
             0.0 1.0 0.0 0.0
             0.0 0.0 1.0 0.0
@@ -12,8 +13,8 @@ using StaticArrays
         ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
-    )
-    tet2 = Mesh(
+    ))
+    tet2 = Object(Mesh(
         [
             0.0 1.0 0.0 0.0
             0.0 0.0 1.0 0.0
@@ -21,7 +22,7 @@ using StaticArrays
         ],
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
-    )
+    ))
 
     points = Hydroelastics.intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
@@ -74,8 +75,9 @@ end
     @test Hydroelastics.triangulate_polygon(polygon) == result
 end
 
+
 @testset "mesh forces" begin
-    tet1 = Mesh(
+    tet1 = Object(Mesh(
         [
             0.0 1 0 0
             0 0 1 0
@@ -83,8 +85,8 @@ end
         ],
         reshape([1, 2, 3, 4], 4, 1),
         [0.0, 0.0, 0.0, 1.0],
-    )
-    tet2 = Mesh(
+    ))
+    tet2 = Object(Mesh(
         [
             0 1 0 0
             0 0 1 0
@@ -92,38 +94,17 @@ end
         ],
         reshape([1, 2, 3, 4], 4, 1),
         [0.0, 0.0, 0.0, 1.0],
-    )
+    ))
 
     force = Hydroelastics.tet_force(tet1, tet2, 1, 1)
     # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
     # so the weights on the vtxs of A should be .033, .033, .033, .9
     expected_force = [0, 0, -0.0045]
     @test norm(force - expected_force) < 1e-6
-
-    function get_cube(com::Vector{Float64})
-        """
-        returns a cube with center at com
-        """
-        cube_verts =
-            com .+ [
-                -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
-                -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
-                -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
-            ]
-        cube_tets = [
-            1 4 1 1 1 1 8 4 8 7 4 8
-            2 2 2 5 3 5 4 3 7 6 8 6
-            3 3 6 6 7 7 7 7 6 5 2 2
-            9 9 9 9 9 9 9 9 9 9 9 9
-        ]
-        cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-        Mesh(cube_verts, cube_tets, cube_pots)
-    end
-    cu1 = get_cube([0.0, 0.0, 0.0])
-    cu2 = get_cube([0.39103, 0.0232, 0.4312])
-
-    force_cubes = compute_force(cu1, cu2)
-    @test norm(force_cubes - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6
+    #cu1 = make_cube([0.0, 0.0, 0.0])
+    #cu2 = make_cube([0.39103, 0.0232, 0.4312])
+    #force_cubes = compute_force(cu1, cu2)
+    #@test norm(force_cubes - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6
 end
 
 @testset "icosphere volume" begin

@@ -1,9 +1,19 @@
-function intersect_tets(m1::Object, m2::Object, a_face_idx::Int64, b_face_idx::Int64)
-    error("unimplemented")
+function transform_vertices(transform, vertices)
+    # concatenate ones to vertices
+    ones_arr = ones(1, size(vertices, 2))
+    mat = vcat(vertices, ones_arr)
+    vertices = transform * mat
+    return vertices[1:3, :]
+end
+
+function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::Int64)
+    #error("unimplemented")
 
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
-    coords_A = m1.verts[:, m1.tets[1:4, a_face_idx]] # 3 x 4 matrix
-    coords_B = m2.verts[:, m2.tets[1:4, b_face_idx]] # 3 x 4 matrix
+    m1 = o1.mesh
+    m2 = o2.mesh
+    coords_A = transform_vertices(o1.pose, m1.verts[:, m1.tets[1:4, a_face_idx]]) # 3 x 4 matrix
+    coords_B = transform_vertices(o2.pose, m2.verts[:, m2.tets[1:4, b_face_idx]]) # 3 x 4 matrix
 
     function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
@@ -157,8 +167,8 @@ Compute overall force between two tets A[i], B[j] of objects A, B.
 Returns the force applied to A (in the direction of A.com - B.com), along with
 the net torque vetors applied to A and B.
 """
-function tet_force(A::Object, B::Object, i::Int64, j::Int64)::ForceResult
-    error("unimplemented")
+function tet_force(A::Object, B::Object, i::Int64, j::Int64)::Vector{Float64}
+    #error("unimplemented")
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
     total_force = 0.0
@@ -167,14 +177,15 @@ function tet_force(A::Object, B::Object, i::Int64, j::Int64)::ForceResult
         if isempty(triangles)
             return zeros(3)
         end
-        vtx_inds = A.tets[:, i]
-        vtx_coords = A.verts[:, vtx_inds]
+        vtx_inds = A.mesh.tets[:, i]
+        vtx_coords = transform_vertices(A.pose, A.mesh.verts[:, vtx_inds])
         vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
         for xyz in eachcol(triangles)
+            # calculate barycentric coordinates of each point in the triangle.
             vtxs = intersection_polygon[:, xyz]
             com = push!(mean(eachcol(vtxs)), 1)
             res = vtx_coords \ com
-            pressure = sum(res .* A.potentials[vtx_inds])
+            pressure = sum(res .* A.mesh.potentials[vtx_inds])
             area = 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
             total_force += pressure * area
         end
@@ -183,7 +194,7 @@ function tet_force(A::Object, B::Object, i::Int64, j::Int64)::ForceResult
             intersection_polygon[:, 1] - intersection_polygon[:, 3],
         )
         normal = normal / norm(normal)
-        if dot(normal, A.com - B.com) < 0
+        if dot(normal, A.mesh.com - B.mesh.com) < 0
             normal = -1 * normal
         end
     end
@@ -195,14 +206,27 @@ Computes force on object A due to contact with object B, along with the net
 torques on both objects.
 """
 function compute_force(A::Object, B::Object)::ForceResult
-    error("unimplemented")
+    #error("unimplemented")
     force = zeros(3)
-    for i = 1:A.m
-        for j = 1:B.m
+    τ_AB = zeros(3)
+    τ_BA = zeros(3)
+
+    for i = 1:A.mesh.m
+        for j = 1:B.mesh.m
             force += tet_force(A, B, i, j)
+            #τ_AB += cross(A.mesh.com - B.mesh.com, force)
+            #τ_BA += cross(B.mesh.com - A.mesh.com, force)
         end
     end
-    force
+    τ_AB = cross(A.mesh.com - B.mesh.com, force)
+    τ_BA = -1 * τ_AB
+    #println("force: ", force)
+    ForceResult(
+        force,
+        -1 * force,
+        τ_AB,
+        τ_BA,
+    )
 end
 
-export compute_force
+export compute_force, transform_vertices

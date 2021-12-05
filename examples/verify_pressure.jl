@@ -22,28 +22,7 @@ begin
 end
 
 # ╔═╡ 36ac084d-c85c-488c-bd20-7a490fa471c9
-function get_cube(com, sz)
-    """
-    returns a cube with center at com
-    """
-    cube_verts =
-        com .+
-        sz * [
-            -1.0 -1.0 -1.0 -1.0 1.0 1.0 1.0 1.0 0.0
-            -1.0 -1.0 1.0 1.0 -1.0 -1.0 1.0 1.0 0.0
-            -1.0 1.0 -1.0 1.0 -1.0 1.0 -1.0 1.0 0.0
-        ]
-    cube_tets = [
-        1 4 1 1 1 1 8 4 8 7 4 8
-        2 2 2 5 3 5 4 3 7 6 8 6
-        3 3 6 6 7 7 7 7 6 5 2 2
-        9 9 9 9 9 9 9 9 9 9 9 9
-    ]
-    cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    cube = Hydroelastics.Mesh(cube_verts, cube_tets, cube_pots)
-    cube
-end
-
+cu1 = make_cube()
 
 # ╔═╡ 22c3247a-7cf8-4cc3-b84f-8a510942d399
 begin
@@ -60,14 +39,14 @@ begin
 	#IJuliaCell(vis)
 	#plot([1,2,3], [4,5,6])
 	#with_terminal() do 
-	    for i in LinRange(-3.0, 3.0, 301)
+	    for i in LinRange(-1.0, 1.0, 301)
 	        #for i in LinRange(-0.1, 0.1, 9)
-	        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
-	        #cu2 = get_cube([i, 0.0, 0.0], 1.0)
+	        cu1 = make_cube()
+	        cu2 = make_cube([i,0,0])
+    
 			push!(x, i)
 			
-	        cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
-	        push!(all_forces, norm(mesh_force(cu1, cu2)))
+	        push!(all_forces, norm(compute_force(cu1, cu2).F_AB))
 			
 			#push!(specific_tet_force, tet_force(cu1, cu2, 2, 11)[1])
 	    end
@@ -87,7 +66,11 @@ begin
 end
 
 # ╔═╡ 431997b4-0cb0-47c9-8ffb-38ae5615593c
-
+begin 
+	i = 0.05
+	cu2 = make_cube([i,0,0])
+	transform_vertices(cu2.pose, cu2.mesh.verts[:,1:9])
+end
 
 # ╔═╡ d15ae364-c519-48db-838f-4f58226c1197
 plot([1,2,3], [4,5,6])
