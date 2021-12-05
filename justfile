@@ -12,6 +12,9 @@ notebook:
 format:
     {{julia}} -e "using JuliaFormatter; format(\"src\", verbose=true); format(\"test\", verbose=true)"
 
+bench:
+    {{julia}} bench/bench.jl
+
 check:
     if [[ $(git diff --name-only) ]]; then \
         >&2 echo "Please run check on a clean Git working tree."; \
