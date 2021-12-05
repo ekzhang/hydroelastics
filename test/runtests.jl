@@ -30,7 +30,9 @@ using StaticArrays
     points = Hydroelastics.intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
 
-    for p in eachcol(points)
+    @test !isnothing(points)
+
+    for p in eachcol(points[0])
         # there must exist a j in res which is close
         found = false
         for q in expected_points
@@ -61,24 +63,6 @@ end
     @test norm(tet.com - [1.0, 2.0, 3.0]) < 1e-6
 end
 
-@testset "triangulation" begin
-    # start with (0, 0), (1, 0), (1, 1), (0, 2), (-2, 2), (-2, 1)
-    # map x, y -> 2*x+1, x-y-2, 2*y-x
-    # then shuffle vertices; old:new mapping is {0:0, 1:4, 2:1, 3:3, 4:5, 5:2}
-    polygon = [
-        1.0 3 -3 1 3 -3
-        -2 -2 -5 -4 -1 -6
-        0 1 4 4 -1 6
-    ]
-    result = [
-        1 1 1 1
-        3 6 4 2
-        6 4 2 5
-    ]
-    @test Hydroelastics.triangulate_polygon(polygon) == result
-end
-
-
 @testset "mesh forces" begin
     tet1 = Object(
         Mesh(
@@ -108,6 +92,7 @@ end
     # so the weights on the vtxs of A should be .033, .033, .033, .9
     expected_force = [0, 0, -0.0045]
     @test norm(force - expected_force) < 1e-6
+
     #cu1 = make_cube([0.0, 0.0, 0.0])
     #cu2 = make_cube([0.39103, 0.0232, 0.4312])
     #force_cubes = compute_force(cu1, cu2)
@@ -141,71 +126,4 @@ end
         0 0.7071 -.7071
         0 0.7071 0.7071
     ]) < 1e-2
-end
-
-@testset "new polygon intersection" begin
-    import Hydroelastics: intersect_polygons
-
-    # regular intersection
-    polygonA = [
-        -1.0 1.0 1.0 -1.0
-        -1.0 -1.0 1.0 1.0
-    ]
-    polygonB = [
-        0.0 2.0 2.0 0.0
-        0.0 0.0 2.0 2.0
-    ]
-    total_res = intersect_polygons(polygonA, polygonB)
-    expected_res = [1.0 0.0 0.0 1.0; 1.0 1.0 0.0 0.0]
-    @test norm(total_res - expected_res) < 1e-6
-
-    # empty intersection
-    polygonA2 = [
-        -3.0 -1.0 -1.0 -3.0
-        -3.0 -3.0 -1.0 -1.0
-    ]
-    polygonB2 = [
-        0.0 2.0 2.0 0.0
-        0.0 0.0 2.0 2.0
-    ]
-    total_res2 = intersect_polygons(polygonA2, polygonB2)
-    @test isnothing(total_res2)
-
-    # inclusion
-    polygonA3 = [
-        -3.0 2.0 2.0 -3.0
-        -3.0 -3.0 2.0 2.0
-    ]
-    polygonB3 = [
-        0.0 -1.0 -1.0 0.0
-        0.0 0.0 -1.0 -1.0
-    ]
-    total_res3 = intersect_polygons(polygonA3, polygonB3)
-    expected_res3 = [0.0 -1.0 -1.0 0.0; 0.0 0.0 -1.0 -1.0]
-    @test norm(total_res3 - expected_res3) < 1e-6
-
-    # hybrid test
-    polygonA4 = [
-        -1.0 1.0 0.0
-        0.0 0.0 3.0
-    ]
-    polygonB4 = [
-        -1.0 1.0 0.0
-        2.0 2.0 1.0
-    ]
-    total_res4 = intersect_polygons(polygonA4, polygonB4)
-    expected_res4 = [0.5 0.3333333 -0.3333333 -0.5 0.0; 1.5 2.0 2.0 1.5 1.0]
-    @test norm(total_res4 - expected_res4) < 1e-6
-
-    # inclusion; swap A, B from test 3
-    polygonB5 = [
-        -3.0 2.0 2.0 -3.0
-        -3.0 -3.0 2.0 2.0
-    ]
-    polygonA5 = [
-        0.0 -1.0 -1.0 0.0
-        0.0 0.0 -1.0 -1.0
-    ]
-    total_res5 = intersect_polygons(polygonA5, polygonB5)
-    @test norm(total_res5 - expected_res3) < 1e-6
 end
