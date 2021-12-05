@@ -16,7 +16,6 @@ begin
     using Hydroelastics
     using LinearAlgebra
     using Plots
-    using Polyhedra
     #using PlutoUI
     using MeshCat
 end

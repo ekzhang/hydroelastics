@@ -1,5 +1,3 @@
-lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
-
 function sort_polygon(polygonA::Matrix{Float64})
     # sort 2xN polygon in counter-clockwise order about center of mass
     n = size(polygonA)[2]
@@ -13,14 +11,6 @@ function sort_polygon(polygonA::Matrix{Float64})
     end
     order = sortperm(angles)
     hcat([polygonA[:, order[i]] for i = 1:n]...)::Matrix{Float64}
-end
-
-function nextidx(idx::Int64, n::Int64)
-    if idx == n
-        return 1
-    else
-        return idx + 1
-    end
 end
 
 const Point = SVector{2}
@@ -90,21 +80,21 @@ function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64}
     halfplanes::Array{HalfPlane} = []
     for i = 1:n
         pt1 = Point(polygonA[1, i], polygonA[2, i])
-        pt2 = Point(polygonA[1, nextidx(i, n)], polygonA[2, nextidx(i, n)])
+        pt2 = Point(polygonA[1, mod1(i + 1, n)], polygonA[2, mod1(i + 1, n)])
         s = HalfPlane(pt1, pt2)
         push!(halfplanes, s)
     end
     for i = 1:m
         t = HalfPlane(
             Point(polygonB[1, i], polygonB[2, i]),
-            Point(polygonB[1, nextidx(i, m)], polygonB[2, nextidx(i, m)]),
+            Point(polygonB[1, mod1(i + 1, m)], polygonB[2, mod1(i + 1, m)]),
         )
         push!(halfplanes, t)
     end
     for i = 1:4
         t = HalfPlane(
             Point(box[1, i], box[2, i]),
-            Point(box[1, nextidx(i, 4)], box[2, nextidx(i, 4)]),
+            Point(box[1, mod1(i + 1, 4)], box[2, mod1(i + 1, 4)]),
         )
         push!(halfplanes, t)
     end
@@ -140,9 +130,9 @@ function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64}
     end
     result = Vector{Point}()
     for i = 1:len
-        push!(result, intersect_halfplanes(dq[i], dq[nextidx(i, len)]))
+        push!(result, intersect_halfplanes(dq[i], dq[mod1(i + 1, len)]))
     end
-    return result
+    result
 end
 
 function convert_points(points::Vector{Point})::Matrix{Float64}
@@ -318,7 +308,7 @@ end
 Compute overall force between two tets A[i], B[j] of objects A, B.
 
 Returns the force applied to A (in the direction of A.com - B.com), along with
-the net torque vetors applied to A and B.
+the location of force applied to A and B.
 """
 function tet_force(
     A::Object,
@@ -334,7 +324,7 @@ function tet_force(
     if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
         if isempty(triangles)
-            return zeros(3)
+            return zeros(3), zeros(3)
         end
         vtx_inds = A.mesh.tets[:, i]
         vtx_coords = transform(A.mesh.verts[:, vtx_inds], A.pose)

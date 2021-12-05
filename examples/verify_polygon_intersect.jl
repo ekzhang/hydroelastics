@@ -15,7 +15,6 @@ begin
     using Revise
     using LinearAlgebra
     using Plots
-    using Polyhedra
     using PlutoUI
     using MeshCat
 end

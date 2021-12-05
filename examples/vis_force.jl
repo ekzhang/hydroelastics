@@ -7,14 +7,7 @@ using InteractiveUtils
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
     quote
-        local iv = try
-            Base.loaded_modules[Base.PkgId(
-                Base.UUID("6e696c72-6542-2067-7265-42206c756150"),
-                "AbstractPlutoDingetjes",
-            )].Bonds.initial_value
-        catch
-            b -> missing
-        end
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
@@ -57,7 +50,7 @@ cube = make_cube()
 # ╔═╡ c9706e48-450e-4d1f-8541-737d7e0aa470
 begin
     object1 = translate(sphere, @SVector [0.031, -d, 0.052])
-    object2 = translate(cube, @SVector [0, d, 0])
+    object2 = translate(sphere, @SVector [0, d, 0])
 end
 
 # ╔═╡ e32777f6-d54f-4ef1-be3f-0c57c1d01cd0
