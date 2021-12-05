@@ -221,12 +221,7 @@ function compute_force(A::Object, B::Object)::ForceResult
     τ_AB = cross(A.mesh.com - B.mesh.com, force)
     τ_BA = -1 * τ_AB
     #println("force: ", force)
-    ForceResult(
-        force,
-        -1 * force,
-        τ_AB,
-        τ_BA,
-    )
+    ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 
 export compute_force, transform_vertices

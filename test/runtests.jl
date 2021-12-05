@@ -5,24 +5,28 @@ using StaticArrays
 
 @testset "tet intersection" begin
     print("hello")
-    tet1 = Object(Mesh(
-        [
-            0.0 1.0 0.0 0.0
-            0.0 0.0 1.0 0.0
-            0.0 0.0 0.0 1.0
-        ],
-        reshape([1, 2, 3, 4], :, 1),
-        [0.0, 0.0, 0.0, 1.0],
-    ))
-    tet2 = Object(Mesh(
-        [
-            0.0 1.0 0.0 0.0
-            0.0 0.0 1.0 0.0
-            1.8 1.8 1.8 0.8
-        ],
-        reshape([1, 2, 3, 4], :, 1),
-        [0.0, 0.0, 0.0, 1.0],
-    ))
+    tet1 = Object(
+        Mesh(
+            [
+                0.0 1.0 0.0 0.0
+                0.0 0.0 1.0 0.0
+                0.0 0.0 0.0 1.0
+            ],
+            reshape([1, 2, 3, 4], :, 1),
+            [0.0, 0.0, 0.0, 1.0],
+        ),
+    )
+    tet2 = Object(
+        Mesh(
+            [
+                0.0 1.0 0.0 0.0
+                0.0 0.0 1.0 0.0
+                1.8 1.8 1.8 0.8
+            ],
+            reshape([1, 2, 3, 4], :, 1),
+            [0.0, 0.0, 0.0, 1.0],
+        ),
+    )
 
     points = Hydroelastics.intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
@@ -77,24 +81,28 @@ end
 
 
 @testset "mesh forces" begin
-    tet1 = Object(Mesh(
-        [
-            0.0 1 0 0
-            0 0 1 0
-            0 0 0 1
-        ],
-        reshape([1, 2, 3, 4], 4, 1),
-        [0.0, 0.0, 0.0, 1.0],
-    ))
-    tet2 = Object(Mesh(
-        [
-            0 1 0 0
-            0 0 1 0
-            1.8 1.8 1.8 0.8
-        ],
-        reshape([1, 2, 3, 4], 4, 1),
-        [0.0, 0.0, 0.0, 1.0],
-    ))
+    tet1 = Object(
+        Mesh(
+            [
+                0.0 1 0 0
+                0 0 1 0
+                0 0 0 1
+            ],
+            reshape([1, 2, 3, 4], 4, 1),
+            [0.0, 0.0, 0.0, 1.0],
+        ),
+    )
+    tet2 = Object(
+        Mesh(
+            [
+                0 1 0 0
+                0 0 1 0
+                1.8 1.8 1.8 0.8
+            ],
+            reshape([1, 2, 3, 4], 4, 1),
+            [0.0, 0.0, 0.0, 1.0],
+        ),
+    )
 
     force = Hydroelastics.tet_force(tet1, tet2, 1, 1)
     # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
