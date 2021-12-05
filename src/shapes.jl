@@ -143,9 +143,7 @@ function make_cube()
         9 9 9 9 9 9 9 9 9 9 9 9
     ]
     cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    Object(
-        Mesh(cube_verts, cube_tets, cube_pots),
-    )
+    Object(Mesh(cube_verts, cube_tets, cube_pots))
 end
 
 export make_icosphere, make_cube

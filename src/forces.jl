@@ -174,10 +174,17 @@ Compute overall force between two tets A[i], B[j] of objects A, B.
 Returns the force applied to A (in the direction of A.com - B.com), along with
 the net torque vetors applied to A and B.
 """
-function tet_force(A::Object, B::Object, i::Int64, j::Int64)::Vector{Float64}
+function tet_force(
+    A::Object,
+    B::Object,
+    i::Int64,
+    j::Int64,
+)::Tuple{Vector{Float64},Vector{Float64}}
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
     total_force = 0.0
+    intersection_com = zeros(3)
+    total_area = 0.0
     if (size(intersection_polygon)[1] > 0) && (size(intersection_polygon)[2] > 0)
         triangles = triangulate_polygon(intersection_polygon)
         if isempty(triangles)
@@ -194,6 +201,8 @@ function tet_force(A::Object, B::Object, i::Int64, j::Int64)::Vector{Float64}
             pressure = sum(res .* A.mesh.potentials[vtx_inds])
             area = 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
             total_force += pressure * area
+            total_area += area
+            intersection_com += area * com[1:3]
         end
         normal = cross(
             intersection_polygon[:, 1] - intersection_polygon[:, 2],
@@ -203,8 +212,9 @@ function tet_force(A::Object, B::Object, i::Int64, j::Int64)::Vector{Float64}
         if dot(normal, A.mesh.com - B.mesh.com) < 0
             normal = -1 * normal
         end
+        intersection_com /= total_area
     end
-    total_force * normal
+    (total_force * normal, intersection_com)
 end
 
 """
@@ -218,11 +228,12 @@ function compute_force(A::Object, B::Object)::ForceResult
 
     for i = 1:A.mesh.m
         for j = 1:B.mesh.m
-            force += tet_force(A, B, i, j)
+            tets_result = tet_force(A, B, i, j)
+            force += tets_result[1]
+            τ_AB += cross(tets_result[2] - A.mesh.com, force)
+            τ_BA += cross(tets_result[2] - B.mesh.com, force)
         end
     end
-    τ_AB = cross(A.mesh.com - B.mesh.com, force)
-    τ_BA = -1 * τ_AB
     ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 

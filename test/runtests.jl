@@ -103,7 +103,7 @@ end
         ),
     )
 
-    force = Hydroelastics.tet_force(tet1, tet2, 1, 1)
+    force = (Hydroelastics.tet_force(tet1, tet2, 1, 1))[1]
     # from prev test we know the intersection is a triangle (0,0,.9), (.1, 0, .9), (0, .1, .9)
     # so the weights on the vtxs of A should be .033, .033, .033, .9
     expected_force = [0, 0, -0.0045]
