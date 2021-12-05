@@ -1,6 +1,7 @@
 using Test
 using Hydroelastics
 using LinearAlgebra
+using StaticArrays
 
 @testset "tet intersection" begin
     tet1 = Mesh(
@@ -128,4 +129,29 @@ end
 @testset "icosphere volume" begin
     sphere = make_icosphere(5)
     @test abs(volume(sphere) - 4pi / 3) < 0.0025
+end
+
+@testset "object rotations" begin
+    tet = Mesh(
+        [
+            0.0 1.0 0.0 0.0
+            0.0 0.0 1.0 0.0
+            0.0 0.0 0.0 1.0
+        ],
+        reshape([1, 2, 3, 4], :, 1),
+        [0.0, 0.0, 0.0, 1.0],
+    )
+    obj = Object(tet, @SMatrix [
+        1 0 0 1
+        0 1 0 1
+        0 0 1 1
+        0 0 0 1
+    ])
+    new_obj = rotateX(obj, pi / 4)
+    @test norm(new_obj.pose[1:3, 1:3] - @SMatrix [
+        1 0 0
+        0 0.7071 -.7071
+        0 0.7071 0.7071
+    ]) < 1e-2
+    # TODO: add tests for rotateY, rotateZ, position checking
 end

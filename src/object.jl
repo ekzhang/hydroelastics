@@ -87,15 +87,39 @@ function translate(obj::Object, disp::SVector{3})::Object
 end
 
 function rotateX(obj::Object, angle::Float64)::Object
-    error("unimplemented")
+    transform(
+        obj,
+        @SMatrix [
+            1 0 0 0
+            0 cos(angle) -sin(angle) 0
+            0 sin(angle) cos(angle) 0
+            0 0 0 1
+        ]
+    )
 end
 
 function rotateY(obj::Object, angle::Float64)::Object
-    error("unimplemented")
+    transform(
+        obj,
+        @SMatrix [
+            cos(angle) 0 sin(angle) 0
+            0 1 0 0
+            -sin(angle) 0 cos(angle) 0
+            0 0 0 1
+        ]
+    )
 end
 
 function rotateZ(obj::Object, angle::Float64)::Object
-    error("unimplemented")
+    transform(
+        obj,
+        @SMatrix [
+            cos(angle) -sin(angle) 0 0
+            sin(angle) cos(angle) 0 0
+            0 0 1 0
+            0 0 0 1
+        ]
+    )
 end
 
 export Mesh, Object, volume, transform, translate, rotateX, rotateY, rotateZ
