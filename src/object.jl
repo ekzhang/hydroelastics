@@ -1,5 +1,3 @@
-lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
-
 struct Mesh
     n::Int32 # number of vertices
     m::Int32 # number of tets

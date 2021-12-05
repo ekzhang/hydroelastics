@@ -1,3 +1,5 @@
+lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
+
 """
 Finds intersection between two tetrahedra
 """
