@@ -1,5 +1,177 @@
 lib = DefaultLibrary{Float64}(diff_optimizer(GLPK.Optimizer))
 
+function sort_polygon(polygonA::Matrix{Float64})
+    # sort 2xN polygon in counter-clockwise order about center of mass
+    n = size(polygonA)[2]
+    com = [sum(polygonA[i, :]) for i = 1:2] / n
+    angles = []  # list of (angle, vtx index corresponding to angle)
+    displacements = polygonA - reshape(repeat(com, n), 2, n)
+    for ind = 1:n
+        disp = displacements[:, ind]
+        angle = -atan(disp[2], disp[1]) # negative for counterclockwise
+        push!(angles, angle)
+    end
+    order = sortperm(angles)
+    hcat([polygonA[:, order[i]] for i = 1:n]...)::Matrix{Float64}
+end
+
+function nextidx(idx::Int64, n::Int64)
+    if idx == n
+        return 1
+    else
+        return idx + 1
+    end
+end
+
+struct Point
+    x::Float64
+    y::Float64
+end
+
+function Base.:+(x::Point, y::Point)
+    Point(x.x + y.x, x.y + y.y)
+end
+
+function Base.:-(x::Point, y::Point)
+    Point(x.x - y.x, x.y - y.y)
+end
+
+function Base.:*(x::Point, y::Float64)
+    Point(x.x * y, x.y * y)
+end
+
+function point_cross(x::Point, y::Point)
+    x.x * y.y - x.y * y.x
+end
+
+
+struct HalfPlane
+    p::Point
+    pq::Point
+    angle::Float64
+
+    HalfPlane(p::Point, q::Point) = begin
+        p = p
+        pq = Point(q.x - p.x, q.y - p.y)
+        angle = atan(pq.y, pq.x)
+        new(p, pq, angle)
+    end
+end
+
+function out(h::HalfPlane, r::Point)
+    return point_cross(h.pq, r - h.p) > 1e-6
+end
+
+function Base.isless(x::HalfPlane, y::HalfPlane)
+    if (abs(x.angle - y.angle) < 1e-6)
+        return point_cross(x.pq, y.p - x.p) > 0
+    end
+    return x.angle < y.angle
+end
+
+function Base.isequal(x::HalfPlane, y::HalfPlane)
+    if (abs(x.angle - y.angle) < 1e-6)
+        return true
+    else
+        return false
+    end
+end
+
+function intersect_halfplanes(s::HalfPlane, t::HalfPlane)
+    alpha = point_cross((t.p - s.p), t.pq) / point_cross(s.pq, t.pq)
+    return s.p + s.pq * alpha
+end
+
+function cust_unique(s::Vector{HalfPlane})
+    res = Vector{HalfPlane}()
+    for i = 1:size(s)[1]
+        if size(res)[1] > 0
+            if abs(res[size(res)[1]].angle - s[i].angle) > 1e-6
+                push!(res, s[i])
+            end
+        else
+            push!(res, s[i])
+        end
+    end
+    res
+end
+
+function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64})
+    #polygon A is a 2xN matrix, polygon B is a 2xM matrix. 
+    #returns the intersection of polygon A and polygon B
+    #if there is no intersection, returns an empty matrix
+    box = [
+        1e7 -1e7 -1e7 1e7
+        1e7 1e7 -1e7 -1e7
+    ]
+    n, m = size(polygonA, 2), size(polygonB, 2)
+    polygonA, polygonB = sort_polygon(polygonA), sort_polygon(polygonB)
+    box = sort_polygon(box)
+    halfplanes::Array{HalfPlane} = []
+    for i = 1:n
+        pt1 = Point(polygonA[1, i], polygonA[2, i])
+        pt2 = Point(polygonA[1, nextidx(i, n)], polygonA[2, nextidx(i, n)])
+        s = HalfPlane(pt1, pt2)
+        push!(halfplanes, s)
+    end
+    for i = 1:m
+        t = HalfPlane(
+            Point(polygonB[1, i], polygonB[2, i]),
+            Point(polygonB[1, nextidx(i, m)], polygonB[2, nextidx(i, m)]),
+        )
+        push!(halfplanes, t)
+    end
+    for i = 1:4
+        t = HalfPlane(
+            Point(box[1, i], box[2, i]),
+            Point(box[1, nextidx(i, 4)], box[2, nextidx(i, 4)]),
+        )
+        push!(halfplanes, t)
+    end
+    sort!(halfplanes)
+    halfplanes = cust_unique(halfplanes)
+    dq = Vector{HalfPlane}()
+    len = 0
+    for i = 1:length(halfplanes)
+        while ((len > 1) && out(halfplanes[i], intersect_halfplanes(dq[len], dq[len-1])))
+            pop!(dq)
+            len = len - 1
+        end
+
+        while ((len > 1) && out(halfplanes[i], intersect_halfplanes(dq[1], dq[2])))
+            popfirst!(dq)
+            len = len - 1
+        end
+        push!(dq, halfplanes[i])
+        len = len + 1
+    end
+
+    while (len > 2 && out(dq[1], intersect_halfplanes(dq[len], dq[len-1])))
+        pop!(dq)
+        len = len - 1
+    end
+    while (len > 2 && out(dq[len], intersect_halfplanes(dq[1], dq[2])))
+        popfirst!(dq)
+        len = len - 1
+    end
+
+    if (len < 3)
+        return Vector{Point}()
+    end
+    result = Vector{Point}()
+    for i = 1:len
+        push!(result, intersect_halfplanes(dq[i], dq[nextidx(i, len)]))
+    end
+    return result
+end
+
+function convertPoints(points::Vector{Point})
+    if size(points)[1] == 0
+        return Array{Float64}(undef, 0, 2)
+    end
+    hcat([[points[i].x; points[i].y] for i = 1:(size(points)[1])]...)
+end
+
 """
 Finds intersection between two tetrahedra
 """
@@ -73,10 +245,13 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
 
     Apoly = twoDproj * isect_A
     Bpoly = twoDproj * isect_B
-    PA = polyhedron(vrep(Apoly'), lib)
-    PB = polyhedron(vrep(Bpoly'), lib)
-    res = polyhedron(vrep(intersect(PA, PB)))
-    all_points = hcat(points(res.vrep)...)
+    all_points = convertPoints(intersect_polygons(Apoly, Bpoly))
+
+    # old polygon intersection code
+    #PA = polyhedron(vrep(Apoly'), lib)
+    #PB = polyhedron(vrep(Bpoly'), lib)
+    #res = polyhedron(vrep(intersect(PA, PB)))
+    #all_points = hcat(points(res.vrep)...)
     if isempty(all_points)
         return zeros(3, 0)
     end
@@ -228,4 +403,4 @@ function compute_force(A::Object, B::Object)::ForceResult
     ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 
-export compute_force
+export compute_force, intersect_polygons, convertPoints

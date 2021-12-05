@@ -141,5 +141,69 @@ end
         0 0.7071 -.7071
         0 0.7071 0.7071
     ]) < 1e-2
-    # TODO: add tests for rotateY, rotateZ, position checking
+end
+
+@testset "new polygon intersection" begin
+    # regular intersection
+    polygonA = [
+        -1.0 1.0 1.0 -1.0
+        -1.0 -1.0 1.0 1.0
+    ]
+    polygonB = [
+        0.0 2.0 2.0 0.0
+        0.0 0.0 2.0 2.0
+    ]
+    total_res = convertPoints(intersect_polygons(polygonA, polygonB))
+    expected_res = [1.0 0.0 0.0 1.0; 1.0 1.0 0.0 0.0]
+    @test norm(total_res - expected_res) < 1e-6
+
+    # empty intersection
+    polygonA2 = [
+        -3.0 -1.0 -1.0 -3.0
+        -3.0 -3.0 -1.0 -1.0
+    ]
+    polygonB2 = [
+        0.0 2.0 2.0 0.0
+        0.0 0.0 2.0 2.0
+    ]
+    total_res2 = convertPoints(intersect_polygons(polygonA2, polygonB2))
+    @test isempty(total_res2)
+
+    # inclusion
+    polygonA3 = [
+        -3.0 2.0 2.0 -3.0
+        -3.0 -3.0 2.0 2.0
+    ]
+    polygonB3 = [
+        0.0 -1.0 -1.0 0.0
+        0.0 0.0 -1.0 -1.0
+    ]
+    total_res3 = convertPoints(intersect_polygons(polygonA3, polygonB3))
+    expected_res3 = [0.0 -1.0 -1.0 0.0; 0.0 0.0 -1.0 -1.0]
+    @test norm(total_res3 - expected_res3) < 1e-6
+
+    # hybrid test
+    polygonA4 = [
+        -1.0 1.0 0.0
+        0.0 0.0 3.0
+    ]
+    polygonB4 = [
+        -1.0 1.0 0.0
+        2.0 2.0 1.0
+    ]
+    total_res4 = convertPoints(intersect_polygons(polygonA4, polygonB4))
+    expected_res4 = [0.5 0.3333333 -0.3333333 -0.5 0.0; 1.5 2.0 2.0 1.5 1.0]
+    @test norm(total_res4 - expected_res4) < 1e-6
+
+    # inclusion; swap A, B from test 3
+    polygonB5 = [
+        -3.0 2.0 2.0 -3.0
+        -3.0 -3.0 2.0 2.0
+    ]
+    polygonA5 = [
+        0.0 -1.0 -1.0 0.0
+        0.0 0.0 -1.0 -1.0
+    ]
+    total_res5 = convertPoints(intersect_polygons(polygonA5, polygonB5))
+    @test norm(total_res5 - expected_res3) < 1e-6
 end
