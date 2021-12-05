@@ -16,13 +16,16 @@ end
 
 polygonA = [
     -1.0 1.0 1.0 -1.0
-    -1.0 -1.0 1.0 1.0]
+    -1.0 -1.0 1.0 1.0
+]
 polygonB = [
     0.0 2.0 2.0 0.0
     0.0 0.0 2.0 2.0
 ]
 println("Original Algorithm, non-differentiable GLPK")
-@btime slow_intersect(polygonA, polygonB)
+display(@benchmark slow_intersect(polygonA, polygonB))
+
+println("\n\n")
 
 println("New Algorithm")
-@btime intersect_polygons(polygonA, polygonB)
+display(@benchmark intersect_polygons(polygonA, polygonB))
