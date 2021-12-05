@@ -4,7 +4,6 @@ using LinearAlgebra
 using StaticArrays
 
 @testset "tet intersection" begin
-    print("hello")
     tet1 = Object(
         Mesh(
             [

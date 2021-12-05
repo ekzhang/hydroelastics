@@ -1,3 +1,6 @@
+"""
+Applies transform to vertices
+"""
 function transform_vertices(transform, vertices)
     # concatenate ones to vertices
     ones_arr = ones(1, size(vertices, 2))
@@ -6,9 +9,10 @@ function transform_vertices(transform, vertices)
     return vertices[1:3, :]
 end
 
+""" 
+Finds intersection between two tetrahedra
+"""
 function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::Int64)
-    #error("unimplemented")
-
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
     m1 = o1.mesh
     m2 = o2.mesh
@@ -29,6 +33,9 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
         return zeros(3, 0)
     end
 
+    """ 
+    Intersects Equation with plane
+    """
     function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
         ones_arr = ones(size(coords, 2), 1)
         mat = hcat(transpose(coords), ones_arr)
@@ -168,7 +175,6 @@ Returns the force applied to A (in the direction of A.com - B.com), along with
 the net torque vetors applied to A and B.
 """
 function tet_force(A::Object, B::Object, i::Int64, j::Int64)::Vector{Float64}
-    #error("unimplemented")
     normal = zeros(3)
     intersection_polygon = intersect_tets(A, B, i, j)
     total_force = 0.0
@@ -206,7 +212,6 @@ Computes force on object A due to contact with object B, along with the net
 torques on both objects.
 """
 function compute_force(A::Object, B::Object)::ForceResult
-    #error("unimplemented")
     force = zeros(3)
     τ_AB = zeros(3)
     τ_BA = zeros(3)
@@ -214,13 +219,10 @@ function compute_force(A::Object, B::Object)::ForceResult
     for i = 1:A.mesh.m
         for j = 1:B.mesh.m
             force += tet_force(A, B, i, j)
-            #τ_AB += cross(A.mesh.com - B.mesh.com, force)
-            #τ_BA += cross(B.mesh.com - A.mesh.com, force)
         end
     end
     τ_AB = cross(A.mesh.com - B.mesh.com, force)
     τ_BA = -1 * τ_AB
-    #println("force: ", force)
     ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 

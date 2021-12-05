@@ -124,7 +124,10 @@ function make_icosphere(order::Int64)
     Object(Mesh(points, tets, potentials))
 end
 
-function make_cube(com = [0.0, 0.0, 0.0])
+""" 
+Creates a cuve with center at the position com and side length two. 
+"""
+function make_cube()
     """
     returns a 2x2x2 cube with center at the origin
     """
@@ -142,12 +145,6 @@ function make_cube(com = [0.0, 0.0, 0.0])
     cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     Object(
         Mesh(cube_verts, cube_tets, cube_pots),
-        @SMatrix [
-            1 0 0 com[1]
-            0 1 0 com[2]
-            0 0 1 com[3]
-            0 0 0 1
-        ]
     )
 end
 
