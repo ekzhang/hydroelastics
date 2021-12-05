@@ -230,8 +230,8 @@ function compute_force(A::Object, B::Object)::ForceResult
         for j = 1:B.mesh.m
             tets_result = tet_force(A, B, i, j)
             force += tets_result[1]
-            τ_AB += cross(tets_result[2] - A.mesh.com, force)
-            τ_BA += cross(tets_result[2] - B.mesh.com, force)
+            τ_AB += cross(tets_result[2] - A.mesh.com, tets_result[1])
+            τ_BA += cross(tets_result[2] - B.mesh.com, tets_result[1])
         end
     end
     ForceResult(force, -1 * force, τ_AB, τ_BA)
