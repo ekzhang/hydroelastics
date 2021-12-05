@@ -1,23 +1,12 @@
 """
-Applies transform to vertices
-"""
-function transform_vertices(transform, vertices)
-    # concatenate ones to vertices
-    ones_arr = ones(1, size(vertices, 2))
-    mat = vcat(vertices, ones_arr)
-    vertices = transform * mat
-    return vertices[1:3, :]
-end
-
-""" 
 Finds intersection between two tetrahedra
 """
 function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::Int64)
     # Usage: Meshes m1, m2, followed by a_fact_idx, b_face_idx.
     m1 = o1.mesh
     m2 = o2.mesh
-    coords_A = transform_vertices(o1.pose, m1.verts[:, m1.tets[1:4, a_face_idx]]) # 3 x 4 matrix
-    coords_B = transform_vertices(o2.pose, m2.verts[:, m2.tets[1:4, b_face_idx]]) # 3 x 4 matrix
+    coords_A = transform(m1.verts[:, m1.tets[1:4, a_face_idx]], o1.pose) # 3 x 4 matrix
+    coords_B = transform(m2.verts[:, m2.tets[1:4, b_face_idx]], o2.pose) # 3 x 4 matrix
 
     function get_equations(coords::Matrix{Float64}, potentials::Vector{Float64})
         ones_arr = ones(size(coords, 2), 1)
@@ -33,7 +22,7 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
         return zeros(3, 0)
     end
 
-    """ 
+    """
     Intersects Equation with plane
     """
     function isect_tet_plane(intersection_eq::Vector{Float64}, coords::Matrix{Float64})
@@ -191,7 +180,7 @@ function tet_force(
             return zeros(3)
         end
         vtx_inds = A.mesh.tets[:, i]
-        vtx_coords = transform_vertices(A.pose, A.mesh.verts[:, vtx_inds])
+        vtx_coords = transform(A.mesh.verts[:, vtx_inds], A.pose)
         vtx_coords = vcat(vtx_coords, ones(1, 4))  # 4x4 matrix of vtxs padded w 1s
         for xyz in eachcol(triangles)
             # calculate barycentric coordinates of each point in the triangle.
@@ -209,7 +198,7 @@ function tet_force(
             intersection_polygon[:, 1] - intersection_polygon[:, 3],
         )
         normal = normal / norm(normal)
-        if dot(normal, A.mesh.com - B.mesh.com) < 0
+        if dot(normal, transform(A.mesh.com, A.pose) - transform(B.mesh.com, B.pose)) < 0
             normal = -1 * normal
         end
         intersection_com /= total_area
@@ -237,4 +226,4 @@ function compute_force(A::Object, B::Object)::ForceResult
     ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 
-export compute_force, transform_vertices
+export compute_force

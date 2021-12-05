@@ -38,7 +38,7 @@ begin
 
     #IJuliaCell(vis)
     #plot([1,2,3], [4,5,6])
-    #with_terminal() do 
+    #with_terminal() do
     for i in LinRange(-1.0, 1.0, 301)
         #for i in LinRange(-0.1, 0.1, 9)
         cu1 = make_cube()
@@ -69,7 +69,7 @@ end
 begin
     i = 0.05
     cu2 = make_cube([i, 0, 0])
-    transform_vertices(cu2.pose, cu2.mesh.verts[:, 1:9])
+    transform(cu2.mesh.verts[:, 1:9], cu2.pose)
 end
 
 # ╔═╡ d15ae364-c519-48db-838f-4f58226c1197

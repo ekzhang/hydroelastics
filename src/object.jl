@@ -70,8 +70,27 @@ function volume(obj::Object)
     volume(obj.mesh)
 end
 
+"""Applies transform to an object."""
 function transform(obj::Object, matrix::SMatrix{4,4})::Object
     Object(obj.mesh, matrix * obj.pose)
+end
+
+"""
+Applies transform to vertices.
+"""
+function transform(vertices::Matrix{Float64}, matrix::SMatrix{4,4})
+    # concatenate ones to vertices
+    ones_arr = ones(1, size(vertices, 2))
+    mat = vcat(vertices, ones_arr)
+    vertices = matrix * mat
+    return vertices[1:3, :]
+end
+
+"""
+Applies transform to a single vertex.
+"""
+function transform(vertex::Vector{Float64}, matrix::SMatrix{4,4})
+    return (matrix*[vertex; 1.0])[1:3]
 end
 
 function translate(obj::Object, disp::SVector{3})::Object
