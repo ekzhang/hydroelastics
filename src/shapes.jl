@@ -111,17 +111,40 @@ function make_icosphere_mesh(order::Int64)
 end
 
 """
-Create an icosphere as a tetrahedral mesh, with potential 1 at the boundary.
+Create an icosphere as a tetrahedral mesh, with potential 0 at the boundary.
 """
-function make_icosphere(order::Int64)
+function make_icosphere(order::Int64, radius::Float64 = 1.0)
     verts, tris = make_icosphere_mesh(order)
-    points::Matrix{Float64} = [verts [0; 0; 0]] # add the origin
+    points::Matrix{Float64} = radius .* [verts [0; 0; 0]] # add the origin
     num_points = size(points, 2)
     tets::Matrix{Int64} = [tris; repeat([num_points], 1, size(tris, 2))]
     @assert size(tets, 1) == 4 "sanity check tets are in the right format"
-    potentials = ones(Float64, num_points)
-    potentials[end] = 0.0
-    Mesh(points, tets, potentials)
+    potentials = zeros(Float64, num_points)
+    potentials[end] = radius
+    Object(Mesh(points, tets, potentials))
 end
 
-export make_icosphere
+"""
+Creates a cuve with center at the position com and side length two.
+"""
+function make_cube(size::Float64 = 1.0)
+    """
+    returns a 2x2x2 cube with center at the origin
+    """
+    cube_verts =
+        size .* [
+            -0.5 -0.5 -0.5 -0.5 0.5 0.5 0.5 0.5 0.0
+            -0.5 -0.5 0.5 0.5 -0.5 -0.5 0.5 0.5 0.0
+            -0.5 0.5 -0.5 0.5 -0.5 0.5 -0.5 0.5 0.0
+        ]
+    cube_tets = [
+        1 4 1 1 1 1 8 4 8 7 4 8
+        2 2 2 5 3 5 4 3 7 6 8 6
+        3 3 6 6 7 7 7 7 6 5 2 2
+        9 9 9 9 9 9 9 9 9 9 9 9
+    ]
+    cube_pots = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, size / 2.0]
+    Object(Mesh(cube_verts, cube_tets, cube_pots))
+end
+
+export make_icosphere, make_cube
