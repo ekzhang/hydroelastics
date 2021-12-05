@@ -23,27 +23,7 @@ function nextidx(idx::Int64, n::Int64)
     end
 end
 
-struct Point
-    x::Float64
-    y::Float64
-end
-
-function Base.:+(x::Point, y::Point)
-    Point(x.x + y.x, x.y + y.y)
-end
-
-function Base.:-(x::Point, y::Point)
-    Point(x.x - y.x, x.y - y.y)
-end
-
-function Base.:*(x::Point, y::Float64)
-    Point(x.x * y, x.y * y)
-end
-
-function point_cross(x::Point, y::Point)
-    x.x * y.y - x.y * y.x
-end
-
+const Point = SVector{2}
 
 struct HalfPlane
     p::Point
@@ -52,19 +32,19 @@ struct HalfPlane
 
     HalfPlane(p::Point, q::Point) = begin
         p = p
-        pq = Point(q.x - p.x, q.y - p.y)
-        angle = atan(pq.y, pq.x)
+        pq = q - p
+        angle = atan(pq[2], pq[1])
         new(p, pq, angle)
     end
 end
 
 function out(h::HalfPlane, r::Point)
-    return point_cross(h.pq, r - h.p) > 1e-6
+    return cross(h.pq, r - h.p) > 1e-6
 end
 
 function Base.isless(x::HalfPlane, y::HalfPlane)
     if (abs(x.angle - y.angle) < 1e-6)
-        return point_cross(x.pq, y.p - x.p) > 0
+        return cross(x.pq, y.p - x.p) > 0
     end
     return x.angle < y.angle
 end
@@ -78,7 +58,7 @@ function Base.isequal(x::HalfPlane, y::HalfPlane)
 end
 
 function intersect_halfplanes(s::HalfPlane, t::HalfPlane)
-    alpha = point_cross((t.p - s.p), t.pq) / point_cross(s.pq, t.pq)
+    alpha = cross((t.p - s.p), t.pq) / cross(s.pq, t.pq)
     return s.p + s.pq * alpha
 end
 
@@ -97,7 +77,7 @@ function cust_unique(s::Vector{HalfPlane})
 end
 
 function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64})
-    #polygon A is a 2xN matrix, polygon B is a 2xM matrix. 
+    #polygon A is a 2xN matrix, polygon B is a 2xM matrix.
     #returns the intersection of polygon A and polygon B
     #if there is no intersection, returns an empty matrix
     box = [
@@ -165,11 +145,11 @@ function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64}
     return result
 end
 
-function convertPoints(points::Vector{Point})
+function convert_points(points::Vector{Point})::Matrix{Float64}
     if size(points)[1] == 0
         return Array{Float64}(undef, 0, 2)
     end
-    hcat([[points[i].x; points[i].y] for i = 1:(size(points)[1])]...)
+    hcat([vec(p) for p in points]...)
 end
 
 """
@@ -245,7 +225,7 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
 
     Apoly = twoDproj * isect_A
     Bpoly = twoDproj * isect_B
-    all_points = convertPoints(intersect_polygons(Apoly, Bpoly))
+    all_points = convert_points(intersect_polygons(Apoly, Bpoly))
 
     # old polygon intersection code
     #PA = polyhedron(vrep(Apoly'), lib)
@@ -403,4 +383,4 @@ function compute_force(A::Object, B::Object)::ForceResult
     ForceResult(force, -1 * force, τ_AB, τ_BA)
 end
 
-export compute_force, intersect_polygons, convertPoints
+export compute_force

@@ -144,6 +144,8 @@ end
 end
 
 @testset "new polygon intersection" begin
+    import Hydroelastics: convert_points, intersect_polygons
+
     # regular intersection
     polygonA = [
         -1.0 1.0 1.0 -1.0
@@ -153,7 +155,7 @@ end
         0.0 2.0 2.0 0.0
         0.0 0.0 2.0 2.0
     ]
-    total_res = convertPoints(intersect_polygons(polygonA, polygonB))
+    total_res = convert_points(intersect_polygons(polygonA, polygonB))
     expected_res = [1.0 0.0 0.0 1.0; 1.0 1.0 0.0 0.0]
     @test norm(total_res - expected_res) < 1e-6
 
@@ -166,7 +168,7 @@ end
         0.0 2.0 2.0 0.0
         0.0 0.0 2.0 2.0
     ]
-    total_res2 = convertPoints(intersect_polygons(polygonA2, polygonB2))
+    total_res2 = convert_points(intersect_polygons(polygonA2, polygonB2))
     @test isempty(total_res2)
 
     # inclusion
@@ -178,7 +180,7 @@ end
         0.0 -1.0 -1.0 0.0
         0.0 0.0 -1.0 -1.0
     ]
-    total_res3 = convertPoints(intersect_polygons(polygonA3, polygonB3))
+    total_res3 = convert_points(intersect_polygons(polygonA3, polygonB3))
     expected_res3 = [0.0 -1.0 -1.0 0.0; 0.0 0.0 -1.0 -1.0]
     @test norm(total_res3 - expected_res3) < 1e-6
 
@@ -191,7 +193,7 @@ end
         -1.0 1.0 0.0
         2.0 2.0 1.0
     ]
-    total_res4 = convertPoints(intersect_polygons(polygonA4, polygonB4))
+    total_res4 = convert_points(intersect_polygons(polygonA4, polygonB4))
     expected_res4 = [0.5 0.3333333 -0.3333333 -0.5 0.0; 1.5 2.0 2.0 1.5 1.0]
     @test norm(total_res4 - expected_res4) < 1e-6
 
@@ -204,6 +206,6 @@ end
         0.0 -1.0 -1.0 0.0
         0.0 0.0 -1.0 -1.0
     ]
-    total_res5 = convertPoints(intersect_polygons(polygonA5, polygonB5))
+    total_res5 = convert_points(intersect_polygons(polygonA5, polygonB5))
     @test norm(total_res5 - expected_res3) < 1e-6
 end
