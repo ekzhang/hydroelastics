@@ -130,32 +130,18 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     # Convert each tetrahedron into four 2D halfplanes, on the projection of
     # the plane to two dimensions along some orthogonal axis.
     halfplanes = HalfPlane[]
-    for coords in [coords_A, coords_B]
+    for coords in (coords_A, coords_B)
         for i = 1:4
-            hs_p1 = Point(proj_mat * coords[:, mod1(i + 1, 4)])
-            hs_p2 = Point(proj_mat * coords[:, mod1(i + 2, 4)])
-            hs_p3 = Point(proj_mat * coords[:, mod1(i + 3, 4)])
-            hs_int = Point(proj_mat * coords[:, i])
-
-            if norm(hs_p1 - hs_p2) > 1e-9 &&
-               abs(cross(hs_int - hs_p1, hs_p1 - hs_p2)) > 1e-9
-                hs_a, hs_b = hs_p1, hs_p2
-            elseif norm(hs_p2 - hs_p3) > 1e-9 &&
-                   abs(cross(hs_int - hs_p1, hs_p1 - hs_p2)) > 1e-9
-                hs_a, hs_b = hs_p2, hs_p3
-            elseif norm(hs_p3 - hs_p1) > 1e-9 &&
-                   abs(cross(hs_int - hs_p1, hs_p1 - hs_p2)) > 1e-9
-                hs_a, hs_b = hs_p3, hs_p1
-            else
-                continue
+            potentials = zeros(4)
+            potentials[i] = 1.0
+            halfspace = get_equation(coords, potentials)
+            normal_2d = (halfspace[1:3]' * inv_proj_mat)'
+            if norm(normal_2d) > 1e-9
+                p = normal_2d * (-halfspace[4] - halfspace[1:3]' * inv_proj_offset) /
+                    dot(normal_2d, normal_2d)
+                pq = normalize(Point(-normal_2d[2], normal_2d[1]))
+                push!(halfplanes, HalfPlane(Point(p), pq))
             end
-
-            if cross(hs_int - hs_a, hs_b - hs_a) < 0
-                # Does this go in the correct direction?
-                hs_a, hs_b = hs_b, hs_a
-            end
-
-            push!(halfplanes, HalfPlane(hs_a, normalize(hs_b - hs_a)))
         end
     end
 

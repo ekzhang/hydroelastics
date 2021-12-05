@@ -32,7 +32,7 @@ using StaticArrays
 
     @test !isnothing(points)
 
-    for p in eachcol(points[0])
+    for p in eachcol(points[1])
         # there must exist a j in res which is close
         found = false
         for q in expected_points
