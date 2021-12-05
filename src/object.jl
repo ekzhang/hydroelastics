@@ -49,7 +49,7 @@ function volume(mesh::Mesh)
     volume
 end
 
-mutable struct Object
+struct Object
     mesh::Mesh
     pose::SMatrix{4,4}
 
