@@ -29,27 +29,23 @@ struct HalfPlane
 end
 
 function out(h::HalfPlane, r::Point)
-    return cross(h.pq, r - h.p) > 1e-6
+    cross(h.pq, r - h.p) > 1e-6
 end
 
 function Base.isless(x::HalfPlane, y::HalfPlane)
     if (abs(x.angle - y.angle) < 1e-6)
         return cross(x.pq, y.p - x.p) > 0
     end
-    return x.angle < y.angle
+    x.angle < y.angle
 end
 
 function Base.isequal(x::HalfPlane, y::HalfPlane)
-    if (abs(x.angle - y.angle) < 1e-6)
-        return true
-    else
-        return false
-    end
+    abs(x.angle - y.angle) < 1e-6
 end
 
 function intersect_halfplanes(s::HalfPlane, t::HalfPlane)
     alpha = cross((t.p - s.p), t.pq) / cross(s.pq, t.pq)
-    return s.p + s.pq * alpha
+    s.p + s.pq * alpha
 end
 
 function cust_unique(s::Vector{HalfPlane})
@@ -66,49 +62,39 @@ function cust_unique(s::Vector{HalfPlane})
     res
 end
 
+"""
+Polygon A is a 2xN matrix, and polygon B is a 2xM matrix.
+
+Returns the intersection of polygon A and polygon B. If there is no
+intersection, returns `nothing`.
+"""
 function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64})
-    #polygon A is a 2xN matrix, polygon B is a 2xM matrix.
-    #returns the intersection of polygon A and polygon B
-    #if there is no intersection, returns an empty matrix
-    box = [
-        1e7 -1e7 -1e7 1e7
-        1e7 1e7 -1e7 -1e7
-    ]
     n, m = size(polygonA, 2), size(polygonB, 2)
     polygonA, polygonB = sort_polygon(polygonA), sort_polygon(polygonB)
-    box = sort_polygon(box)
     halfplanes::Array{HalfPlane} = []
     for i = 1:n
-        pt1 = Point(polygonA[1, i], polygonA[2, i])
-        pt2 = Point(polygonA[1, mod1(i + 1, n)], polygonA[2, mod1(i + 1, n)])
-        s = HalfPlane(pt1, pt2)
-        push!(halfplanes, s)
+        push!(halfplanes, HalfPlane(
+            Point(polygonA[:, i]),
+            Point(polygonA[:, mod1(i + 1, n)]),
+        ))
     end
     for i = 1:m
-        t = HalfPlane(
-            Point(polygonB[1, i], polygonB[2, i]),
-            Point(polygonB[1, mod1(i + 1, m)], polygonB[2, mod1(i + 1, m)]),
-        )
-        push!(halfplanes, t)
-    end
-    for i = 1:4
-        t = HalfPlane(
-            Point(box[1, i], box[2, i]),
-            Point(box[1, mod1(i + 1, 4)], box[2, mod1(i + 1, 4)]),
-        )
-        push!(halfplanes, t)
+        push!(halfplanes, HalfPlane(
+            Point(polygonB[:, i]),
+            Point(polygonB[:, mod1(i + 1, m)]),
+        ))
     end
     sort!(halfplanes)
     halfplanes = cust_unique(halfplanes)
     dq = Vector{HalfPlane}()
     len = 0
     for i = 1:length(halfplanes)
-        while ((len > 1) && out(halfplanes[i], intersect_halfplanes(dq[len], dq[len-1])))
+        while len > 1 && out(halfplanes[i], intersect_halfplanes(dq[len], dq[len-1]))
             pop!(dq)
             len = len - 1
         end
 
-        while ((len > 1) && out(halfplanes[i], intersect_halfplanes(dq[1], dq[2])))
+        while len > 1 && out(halfplanes[i], intersect_halfplanes(dq[1], dq[2]))
             popfirst!(dq)
             len = len - 1
         end
@@ -116,30 +102,22 @@ function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64}
         len = len + 1
     end
 
-    while (len > 2 && out(dq[1], intersect_halfplanes(dq[len], dq[len-1])))
+    while len > 2 && out(dq[1], intersect_halfplanes(dq[len], dq[len-1]))
         pop!(dq)
         len = len - 1
     end
-    while (len > 2 && out(dq[len], intersect_halfplanes(dq[1], dq[2])))
+    while len > 2 && out(dq[len], intersect_halfplanes(dq[1], dq[2]))
         popfirst!(dq)
         len = len - 1
     end
 
-    if (len < 3)
-        return Vector{Point}()
+    if len < 3
+        return nothing
     end
-    result = Vector{Point}()
-    for i = 1:len
-        push!(result, intersect_halfplanes(dq[i], dq[mod1(i + 1, len)]))
-    end
-    result
-end
-
-function convert_points(points::Vector{Point})::Matrix{Float64}
-    if size(points)[1] == 0
-        return Array{Float64}(undef, 0, 2)
-    end
-    hcat([vec(p) for p in points]...)
+    hcat([
+        vec(intersect_halfplanes(dq[i], dq[mod1(i + 1, len)]))
+        for i = 1:len
+    ]...)
 end
 
 """
@@ -196,7 +174,7 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     isect_A = isect_tet_plane(intersection_eq, coords_A)
     isect_B = isect_tet_plane(intersection_eq, coords_B)
 
-    if (isempty(isect_A) || (isempty(isect_B)))
+    if isempty(isect_A) || isempty(isect_B)
         return zeros(3, 0)
     end
     xproj = false
@@ -215,20 +193,14 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
 
     Apoly = twoDproj * isect_A
     Bpoly = twoDproj * isect_B
-    all_points = convert_points(intersect_polygons(Apoly, Bpoly))
 
-    # old polygon intersection code
-    #PA = polyhedron(vrep(Apoly'), lib)
-    #PB = polyhedron(vrep(Bpoly'), lib)
-    #res = polyhedron(vrep(intersect(PA, PB)))
-    #all_points = hcat(points(res.vrep)...)
-    if isempty(all_points)
+    all_points = intersect_polygons(Apoly, Bpoly)
+    if isnothing(all_points)
         return zeros(3, 0)
     end
+
+    @assert size(all_points, 2) >= 3 "sanity check length"
     final_res = zeros(3, size(all_points, 2))
-    if size(all_points, 2) <= 2
-        return zeros(3, 0)
-    end
     for i = 1:size(all_points, 2)
         if xproj
             final_res[2, i] = all_points[1, i]
