@@ -25,9 +25,6 @@ end
 Compute center of mass, given coords of vertices and tets.
 """
 function center_of_mass(verts::Matrix{Float64}, tets::Matrix{Int64})
-    """
-    compute center of mass given coords of vertices and tets
-    """
     # verts [3,n]; tets [4, m]
     tet_centers = Vector{Float64}[]
     vols = Vector{Float64}()
