@@ -63,24 +63,12 @@ begin
 	    for i in LinRange(-3.0, 3.0, 301)
 	        #for i in LinRange(-0.1, 0.1, 9)
 	        cu1 = get_cube([0.0, 0.0, 0.0], 1.0)
-	        cu2 = get_cube([i, 0.0, 0.0], 1.0)
+	        #cu2 = get_cube([i, 0.0, 0.0], 1.0)
 			push!(x, i)
 			
-	        #cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
+	        cu2 = get_cube([i,1e-5,-2.4e-5],1.0)
 	        push!(all_forces, norm(mesh_force(cu1, cu2)))
-			if abs(i) < 1e-5
-				for i in 1:12
-					for j in 1:12
-						if i == j
-							@assert (norm(tet_force(cu1, cu2, i, i)) < 1e-5)
-						else
-							@assert (norm(tet_force(cu1, cu2, i, j) + tet_force(cu1, cu2, j, i)) < 1e-5)
-						end
-					end
-				end
-				println("intersect tets ", tet_force(cu1, cu2, 2, 8))
-				println("intersect tets ", tet_force(cu1, cu2, 8, 2))
-			end
+			
 			#push!(specific_tet_force, tet_force(cu1, cu2, 2, 11)[1])
 	    end
 		z = []
@@ -98,6 +86,9 @@ begin
 	plot(x, all_forces)
 end
 
+# ╔═╡ 431997b4-0cb0-47c9-8ffb-38ae5615593c
+
+
 # ╔═╡ d15ae364-c519-48db-838f-4f58226c1197
 plot([1,2,3], [4,5,6])
 
@@ -106,4 +97,5 @@ plot([1,2,3], [4,5,6])
 # ╠═daf02e8c-4cad-11ec-1211-07b7add5573d
 # ╠═36ac084d-c85c-488c-bd20-7a490fa471c9
 # ╠═22c3247a-7cf8-4cc3-b84f-8a510942d399
+# ╠═431997b4-0cb0-47c9-8ffb-38ae5615593c
 # ╠═d15ae364-c519-48db-838f-4f58226c1197
