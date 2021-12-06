@@ -12,12 +12,12 @@ struct HalfPlane
 end
 
 function out(h::HalfPlane, r::Point)
-    cross(h.pq, r - h.p) > 1e-9
+    cross(h.pq, r - h.p) < -1e-9
 end
 
 function Base.isless(x::HalfPlane, y::HalfPlane)
-    if abs(x.angle - y.angle) < 1e-12
-        return cross(x.pq, y.p - x.p) > 0
+    if abs(x.angle - y.angle) < 1e-6
+        return cross(x.pq, y.p - x.p) < 0
     end
     x.angle < y.angle
 end
@@ -48,6 +48,13 @@ no intersection, returns `nothing`.
 Requires that the halfplanes being intersected have finite area.
 """
 function intersect_halfplanes(halfplanes::Vector{HalfPlane})
+    halfplanes = copy(halfplanes)
+    # append!(halfplanes, [
+    #     HalfPlane(Point(-1e9, -1e9), Point(1.0, 0.0)),
+    #     HalfPlane(Point(1e9, -1e9), Point(0.0, 1.0)),
+    #     HalfPlane(Point(1e9, 1e9), Point(-1.0, 0.0)),
+    #     HalfPlane(Point(-1e9, 1e9), Point(0.0, -1.0)),
+    # ])
     sort!(halfplanes)
     halfplanes = remove_duplicates(halfplanes)
     dq = HalfPlane[]
@@ -60,7 +67,10 @@ function intersect_halfplanes(halfplanes::Vector{HalfPlane})
             popfirst!(dq)
         end
         push!(dq, halfplane)
+        # println("CURLEN: ", length(dq), ", LAST DIR: ", dq[end].pq)
     end
+
+    # println("CURLEN: ", length(dq))
 
     while length(dq) >= 3 && out(dq[1], isect(dq[end], dq[end-1]))
         pop!(dq)
@@ -73,6 +83,7 @@ function intersect_halfplanes(halfplanes::Vector{HalfPlane})
     if len < 3
         return nothing
     end
+    # println("LAST: ", dq)
     hcat([vec(isect(dq[i], dq[mod1(i + 1, len)])) for i = 1:len]...)
 end
 
@@ -95,7 +106,7 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     end
 
     function get_equation(coords::Matrix{Float64}, potentials::Vector{Float64})
-        ones_arr = ones(size(coords, 2), 1)
+        ones_arr = ones(size(coords, 2))
         mat = [coords' ones_arr]
         mat \ potentials
     end
@@ -104,6 +115,13 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     b_pot = get_equation(coords_B, m2.potentials[m2.tets[:, b_face_idx]])
     plane = a_pot - b_pot  # dot(plane, [x; 1.0]) == 0.0
     if norm(plane[1:3]) < 1e-8
+        return nothing
+    end
+
+    # Check if the tets actually intersect with the plane.
+    values_A = plane[1:3]' * coords_A .+ plane[4]
+    values_B = plane[1:3]' * coords_B .+ plane[4]
+    if !(minimum(values_A) < -1e-6 && maximum(values_A) > 1e-6 && minimum(values_B) < -1e-6 && maximum(values_B) > 1e-6)
         return nothing
     end
 
@@ -139,7 +157,7 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
             if norm(normal_2d) > 1e-9
                 p = normal_2d * (-halfspace[4] - halfspace[1:3]' * inv_proj_offset) /
                     dot(normal_2d, normal_2d)
-                pq = normalize(Point(-normal_2d[2], normal_2d[1]))
+                pq = normalize(Point(normal_2d[2], -normal_2d[1]))
                 push!(halfplanes, HalfPlane(Point(p), pq))
             end
         end
@@ -148,6 +166,17 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     all_points = intersect_halfplanes(halfplanes)
     if isnothing(all_points)
         return nothing
+    end
+
+    for p in eachcol(all_points)
+        for hp in halfplanes
+            if out(hp, p)
+                println("Halfplanes: ", halfplanes)
+                println(hp)
+                println(p)
+                error("bad!!")
+            end
+        end
     end
 
     @assert size(all_points, 2) >= 3 "sanity check length"
