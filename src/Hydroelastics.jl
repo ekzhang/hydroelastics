@@ -6,8 +6,10 @@ using Statistics
 using StaticArrays
 using GeometryBasics, Meshes
 using CoordinateTransformations, MeshCat
-using Polyhedra, Polyhedra.Core
-using DiffOpt, GLPK
+using Polyhedra
+using SpatialIndexing
+
+const SI = SpatialIndexing
 
 include("object.jl")
 include("shapes.jl")

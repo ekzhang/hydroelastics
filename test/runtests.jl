@@ -30,7 +30,9 @@ using StaticArrays
     points = Hydroelastics.intersect_tets(tet1, tet2, 1, 1)
     expected_points = [[0.0, 0.0, 0.9], [0.1, 0.0, 0.9], [0.0, 0.1, 0.9]]
 
-    for p in eachcol(points)
+    @test !isnothing(points)
+
+    for p in eachcol(points[1])
         # there must exist a j in res which is close
         found = false
         for q in expected_points
@@ -61,24 +63,6 @@ end
     @test norm(tet.com - [1.0, 2.0, 3.0]) < 1e-6
 end
 
-@testset "triangulation" begin
-    # start with (0, 0), (1, 0), (1, 1), (0, 2), (-2, 2), (-2, 1)
-    # map x, y -> 2*x+1, x-y-2, 2*y-x
-    # then shuffle vertices; old:new mapping is {0:0, 1:4, 2:1, 3:3, 4:5, 5:2}
-    polygon = [
-        1.0 3 -3 1 3 -3
-        -2 -2 -5 -4 -1 -6
-        0 1 4 4 -1 6
-    ]
-    result = [
-        1 1 1 1
-        3 6 4 2
-        6 4 2 5
-    ]
-    @test Hydroelastics.triangulate_polygon(polygon) == result
-end
-
-
 @testset "mesh forces" begin
     tet1 = Object(
         Mesh(
@@ -108,10 +92,14 @@ end
     # so the weights on the vtxs of A should be .033, .033, .033, .9
     expected_force = [0, 0, -0.0045]
     @test norm(force - expected_force) < 1e-6
-    #cu1 = make_cube([0.0, 0.0, 0.0])
-    #cu2 = make_cube([0.39103, 0.0232, 0.4312])
-    #force_cubes = compute_force(cu1, cu2)
-    #@test norm(force_cubes - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6
+
+    sphere = make_icosphere(1)
+    object1 = translate(sphere, @SVector [0.031, -0.5, 0.052])
+    object2 = translate(sphere, @SVector [0, 0.5, 0])
+    forces = compute_force(object1, object2)
+
+    @test norm(forces.F_AB - [0.012750, -0.444069, 0.025010]) < 1e-6
+    @test norm(forces.F_AB + forces.F_BA) < 1e-12
 end
 
 @testset "icosphere volume" begin
@@ -141,5 +129,4 @@ end
         0 0.7071 -.7071
         0 0.7071 0.7071
     ]) < 1e-2
-    # TODO: add tests for rotateY, rotateZ, position checking
 end

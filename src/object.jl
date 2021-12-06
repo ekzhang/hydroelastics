@@ -1,10 +1,14 @@
+"""
+Geometric data structure that stores a tetrahedral mesh with potentials.
+"""
 struct Mesh
     n::Int32 # number of vertices
     m::Int32 # number of tets
     verts::Matrix{Float64} # shape: [3, n]
     tets::Matrix{Int64} # shape: [4, m]
     potentials::Vector{Float64} # shape: [n]
-    com::Vector{Float64}
+    com::Vector{Float64} # center of mass
+    rtree::RTree{Float64,3} # bounding box index data structure
 
     Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
         @assert(size(verts, 1) == 3, "verts should be in R3")
@@ -15,7 +19,17 @@ struct Mesh
         )
         n, m = size(verts, 2), size(tets, 2)
         com = center_of_mass(verts, tets)
-        new(n, m, verts, tets, potentials, com)
+        rtree = RTree{Float64,3}(Int64)
+        for i = 1:m
+            points = verts[:, tets[:, i]]
+            bb_min, bb_max = bounding_box(points)
+            rect = SI.Rect(
+                (bb_min[1], bb_min[2], bb_min[3]),
+                (bb_max[1], bb_max[2], bb_max[3]),
+            )
+            SI.insert!(rtree, rect, i)
+        end
+        new(n, m, verts, tets, potentials, com, rtree)
     end
 end
 
@@ -45,6 +59,11 @@ function volume(mesh::Mesh)
         volume += abs(dot(cross(b - a, c - a), d - a)) / 6.0
     end
     volume
+end
+
+"""Compute the lower and upper bounding box of a collection of points."""
+function bounding_box(points::Matrix{Float64})
+    min.(eachcol(points)...), max.(eachcol(points)...)
 end
 
 struct Object
