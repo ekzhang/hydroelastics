@@ -33,7 +33,7 @@ begin
 end
 
 # ╔═╡ 8bebb189-d470-4077-88dd-a9ad97b94b76
-@bind d Slider(0.0:0.01:1.0; show_value = true, default = 0.5)
+@bind d Slider(0.3:0.01:1.0; show_value = true, default = 0.5)
 
 # ╔═╡ 27b6e401-897c-459a-b6f6-575f3f89b0b5
 begin
@@ -49,7 +49,7 @@ cube = make_cube()
 
 # ╔═╡ c9706e48-450e-4d1f-8541-737d7e0aa470
 begin
-    object1 = translate(sphere, @SVector [0.031, -d, 0.052])
+    object1 = translate(cube, @SVector [0.031, -d, 0.052])
     object2 = translate(sphere, @SVector [0, d, 0])
 end
 

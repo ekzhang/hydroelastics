@@ -298,6 +298,13 @@ Computes force on object A due to contact with object B, along with the net
 torques on both objects.
 """
 function compute_force(A::Object, B::Object)::ForceResult
+    if A.mesh.m > B.mesh.m
+        # Swap order for efficiency
+        result = compute_force(B, A)
+        return ForceResult(result.F_BA, result.F_AB, result.τ_BA, result.τ_AB)
+    end
+
+    X_BA = inv(B.pose) * A.pose
     force = zeros(3)
     τ_AB = zeros(3)
     τ_BA = zeros(3)
@@ -305,7 +312,7 @@ function compute_force(A::Object, B::Object)::ForceResult
     for i = 1:A.mesh.m
         # Coordinates of tet i in object A, from the frame of object B
         coords_BA = A.mesh.verts[:, A.mesh.tets[:, i]]
-        coords_BA = transform(coords_BA, inv(B.pose) * A.pose)
+        coords_BA = transform(coords_BA, X_BA)
         bb_min, bb_max = bounding_box(coords_BA)
         rect = SI.Rect((bb_min[1], bb_min[2], bb_min[3]), (bb_max[1], bb_max[2], bb_max[3]))
 
