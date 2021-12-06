@@ -316,7 +316,7 @@ function compute_force(A::Object, B::Object)::ForceResult
         bb_min, bb_max = bounding_box(coords_BA)
         rect = SI.Rect((bb_min[1], bb_min[2], bb_min[3]), (bb_max[1], bb_max[2], bb_max[3]))
 
-        for elem::SI.SpatialElem in intersects_with(B.mesh.rtree, rect)
+        for elem::SI.SpatialElem in intersects_with(B.mesh.rtree.t, rect)
             j = elem.val
             tets_result = tet_force(A, B, i, j)
             if !isnothing(tets_result)

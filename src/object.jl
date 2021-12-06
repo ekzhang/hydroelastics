@@ -1,4 +1,43 @@
 """
+Wrapper type to reduce the visual noise of Pluto's `Base.show` on `RTree`.
+"""
+struct RTreeWrapper
+    t::RTree{Float64,3}
+end
+
+"""
+Adapted from https://github.com/alyst/SpatialIndexing.jl/blob/105b420e/src/rtree/show.jl.
+"""
+function Base.show(io::IO, rtree::RTreeWrapper)
+    tree = rtree.t
+    print(io, typeof(tree))
+    print(io, "(variant=")
+    print(io, tree.variant)
+    print(io, ", tight_mbrs=")
+    print(io, tree.tight_mbrs)
+    print(io, ", nearmin_overlap=")
+    print(io, tree.nearmin_overlap)
+    print(io, ", fill_factor=")
+    print(io, tree.fill_factor)
+    print(io, ", split_factor=")
+    print(io, tree.split_factor)
+    print(io, ", reinsert_factor=")
+    print(io, tree.reinsert_factor)
+
+    print(io, ", leaf_capacity=")
+    print(io, SI.capacity(SI.Leaf, tree))
+    print(io, ", branch_capacity=")
+    print(io, SI.capacity(SI.Branch, tree))
+    println(io, ")")
+    print(io, SI.length(tree))
+    print(io, " element(s) in ")
+    print(io, SI.height(tree))
+    print(io, " level(s) (")
+    print(io, join(reverse(tree.nnodes_perlevel), ", "))
+    println(io, " node(s) per level)")
+end
+
+"""
 Geometric data structure that stores a tetrahedral mesh with potentials.
 """
 struct Mesh
@@ -8,7 +47,7 @@ struct Mesh
     tets::Matrix{Int64} # shape: [4, m]
     potentials::Vector{Float64} # shape: [n]
     com::Vector{Float64} # center of mass
-    rtree::RTree{Float64,3} # bounding box index data structure
+    rtree::RTreeWrapper # bounding box index data structure
 
     Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
         @assert(size(verts, 1) == 3, "verts should be in R3")
@@ -29,7 +68,7 @@ struct Mesh
             )
             SI.insert!(rtree, rect, i)
         end
-        new(n, m, verts, tets, potentials, com, rtree)
+        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree))
     end
 end
 
