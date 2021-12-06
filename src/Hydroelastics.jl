@@ -7,8 +7,6 @@ using StaticArrays
 using GeometryBasics, Meshes
 using CoordinateTransformations, MeshCat
 using Polyhedra
-using GLPK
-
 
 include("object.jl")
 include("shapes.jl")

@@ -2,12 +2,16 @@ using BenchmarkTools
 using Hydroelastics
 using LinearAlgebra
 using Polyhedra
-using GLPK
 using StaticArrays
-import Hydroelastics: intersect_halfplanes, intersect_halfplanes_slow, HalfPlane
+import Hydroelastics: intersect_halfplanes, intersect_halfplanes_slow, HalfPlane, Point
 
-const Point = SVector{2}
-
+macro run_bench(name, expr)
+    quote
+        printstyled("Benchmarking: ", $name, "\n"; color = :yellow)
+        display(@benchmark esc($expr))
+        println("\n\n")
+    end
+end
 
 tet1 = Object(
     Mesh(
@@ -32,7 +36,9 @@ tet2 = Object(
     ),
 )
 
-display(@benchmark Hydroelastics.tet_force(tet1, tet2, 1, 1))
+@run_bench "Tet force" begin
+    Hydroelastics.tet_force(tet1, tet2, 1, 1)
+end
 
 halfplanes = [
     HalfPlane(Point(-0.16469227056401645, -0.2664776914569725), Point(-0.8506508083520399, 0.5257311121191335)),
@@ -45,13 +51,10 @@ halfplanes = [
     HalfPlane(Point(0.2970629430715192, -0.23999299562154938), Point(0.6284282897093982, 0.7778675238708199)),
 ]
 
-println("Original Algorithm, non-differentiable GLPK")
-display(@benchmark intersect_halfplanes_slow(halfplanes))
+@run_bench "Original halfplane algorithm using Polyhedra" begin
+    intersect_halfplanes_slow(halfplanes)
+end
 
-
-println("\n\n")
-
-println("New Algorithm")
-display(@benchmark intersect_halfplanes(halfplanes))
-
-
+@run_bench "New halfplane algorithm" begin
+    intersect_halfplanes(halfplanes)
+end

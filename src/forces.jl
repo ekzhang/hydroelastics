@@ -67,10 +67,7 @@ function intersect_halfplanes(halfplanes::Vector{HalfPlane})
             popfirst!(dq)
         end
         push!(dq, halfplane)
-        # println("CURLEN: ", length(dq), ", LAST DIR: ", dq[end].pq)
     end
-
-    # println("CURLEN: ", length(dq))
 
     while length(dq) >= 3 && out(dq[1], isect(dq[end], dq[end-1]))
         pop!(dq)
@@ -83,29 +80,29 @@ function intersect_halfplanes(halfplanes::Vector{HalfPlane})
     if len < 3
         return nothing
     end
-    # println("LAST: ", dq)
     hcat([vec(isect(dq[i], dq[mod1(i + 1, len)])) for i = 1:len]...)
 end
 
 function intersect_halfplanes_slow(s::Vector{HalfPlane})
-    # s is a vector of half planes in two dimensions. 
+    # s is a vector of half planes in two dimensions.
     A = zeros(Float64, (length(s), 2))
     b = Vector{Float64}(undef, length(s))
     ones = BitSet()
     sign = 1.0
     for i = 1:length(s)
-        # maybe we need to flip all the signs here? 
+        # maybe we need to flip all the signs here?
         A[i, 1] = sign * s[i].pq[2]
         A[i, 2] = sign * -s[i].pq[1]
         b[i] = sign * (s[i].p[1] * s[i].pq[2] - s[i].p[2] * s[i].pq[1])
     end
     poly = polyhedron(hrep(A, b, ones))
-    res = hcat(Polyhedra.points(vrep(poly))...)
-    if length(res) == 0
+    points = Polyhedra.points(vrep(poly))
+    if length(points) < 3
         return nothing
     end
-    res
+    hcat(points...)
 end
+
 """
 Returns the equi-pressure intersection between two tetrahedra as a polygon, as
 well as the normal vector to the plane of intersection.
@@ -189,7 +186,6 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     end
 
     all_points = intersect_halfplanes_slow(halfplanes)
-    #println("all_points", all_points)
     if isnothing(all_points)
         return nothing
     end
@@ -278,15 +274,9 @@ function tet_force(
         # calculate barycentric coordinates of each point in the triangle.
         vtxs = intersection_polygon[:, [1, i - 1, i]]
         com = push!(mean(eachcol(vtxs)), 1)
-        #println("vtxs: ", vtxs)
-        #println("com: ", com)
         res = vtx_coords \ com
         pressure = sum(res .* A.mesh.potentials[vtx_inds])
         area = 0.5 * norm(cross(vtxs[:, 1] - vtxs[:, 2], vtxs[:, 1] - vtxs[:, 3]))
-        if pressure < 0 || area < 0
-            println(res, " ", pressure, " ", area)
-            error("bad")
-        end
         total_force += pressure * area
         total_area += area
         intersection_com += area * com[1:3]
