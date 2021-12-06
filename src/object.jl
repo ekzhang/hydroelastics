@@ -23,7 +23,10 @@ struct Mesh
         for i = 1:m
             points = verts[:, tets[:, i]]
             bb_min, bb_max = bounding_box(points)
-            rect = SI.Rect((bb_min[1], bb_min[2], bb_min[3]), (bb_max[1], bb_max[2], bb_max[3]))
+            rect = SI.Rect(
+                (bb_min[1], bb_min[2], bb_min[3]),
+                (bb_max[1], bb_max[2], bb_max[3]),
+            )
             SI.insert!(rtree, rect, i)
         end
         new(n, m, verts, tets, potentials, com, rtree)
