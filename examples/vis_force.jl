@@ -42,7 +42,7 @@ begin
 end
 
 # ╔═╡ 90ff5a44-0464-4e10-8494-99a91b301ed4
-sphere = make_icosphere(1)
+sphere = make_icosphere(2)
 
 # ╔═╡ 51f5ad18-2172-41b9-ba71-96e0e1871eff
 cube = make_cube()

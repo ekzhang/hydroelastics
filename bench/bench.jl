@@ -1,14 +1,13 @@
 using BenchmarkTools
 using Hydroelastics
 using LinearAlgebra
-using Polyhedra
 using StaticArrays
 import Hydroelastics: intersect_halfplanes, intersect_halfplanes_slow, HalfPlane, Point
 
-macro run_bench(name, expr)
+macro run_bench(name, expr, args...)
     quote
-        printstyled("Benchmarking: ", $name, "\n"; color = :yellow)
-        display(@benchmark esc($expr))
+        printstyled("Benchmark: ", $name, "\n"; color = :yellow)
+        display(@benchmark esc($expr) $(args...))
         println("\n\n")
     end
 end
@@ -38,6 +37,13 @@ tet2 = Object(
 
 @run_bench "Tet force" begin
     Hydroelastics.tet_force(tet1, tet2, 1, 1)
+end
+
+sphere = make_icosphere(2)
+@run_bench "Icosphere force" begin
+    local object1 = translate(sphere, @SVector [0.031, -0.5, 0.052])
+    local object2 = translate(sphere, @SVector [0, 0.5, 0])
+    compute_force(object1, object2)
 end
 
 halfplanes = [

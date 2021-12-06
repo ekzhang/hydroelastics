@@ -46,6 +46,8 @@ Computes the polygonal intersection of two-dimensional halfplanes. If there is
 no intersection, returns `nothing`.
 
 Requires that the halfplanes being intersected have finite area.
+
+Warning: This version of the code does not handle parallel lines correctly.
 """
 function intersect_halfplanes(halfplanes::Vector{HalfPlane})
     halfplanes = copy(halfplanes)
@@ -116,8 +118,9 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     coords_B = transform(m2.verts[:, m2.tets[:, b_face_idx]], o2.pose) # 3 x 4 matrix
 
     # First, do an initial check for bounding boxes of tetrahedra
-    if any(max.(eachcol(coords_A)...) .< min.(eachcol(coords_B)...)) ||
-       any(max.(eachcol(coords_B)...) .< min.(eachcol(coords_A)...))
+    bbox_A = bounding_box(coords_A)
+    bbox_B = bounding_box(coords_B)
+    if any(bbox_A[2] .< bbox_B[1]) || any(bbox_B[2] .< bbox_A[1])
         return nothing
     end
 
@@ -300,7 +303,14 @@ function compute_force(A::Object, B::Object)::ForceResult
     τ_BA = zeros(3)
 
     for i = 1:A.mesh.m
-        for j = 1:B.mesh.m
+        # Coordinates of tet i in object A, from the frame of object B
+        coords_BA = A.mesh.verts[:, A.mesh.tets[:, i]]
+        coords_BA = transform(coords_BA, inv(B.pose) * A.pose)
+        bb_min, bb_max = bounding_box(coords_BA)
+        rect = SI.Rect((bb_min[1], bb_min[2], bb_min[3]), (bb_max[1], bb_max[2], bb_max[3]))
+
+        for elem::SI.SpatialElem in intersects_with(B.mesh.rtree, rect)
+            j = elem.val
             tets_result = tet_force(A, B, i, j)
             if !isnothing(tets_result)
                 force += tets_result[1]

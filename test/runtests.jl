@@ -93,10 +93,13 @@ end
     expected_force = [0, 0, -0.0045]
     @test norm(force - expected_force) < 1e-6
 
-    #cu1 = make_cube([0.0, 0.0, 0.0])
-    #cu2 = make_cube([0.39103, 0.0232, 0.4312])
-    #force_cubes = compute_force(cu1, cu2)
-    #@test norm(force_cubes - [-1.1401553, -0.6682203, -0.3593239]) < 1e-6
+    sphere = make_icosphere(1)
+    object1 = translate(sphere, @SVector [0.031, -0.5, 0.052])
+    object2 = translate(sphere, @SVector [0, 0.5, 0])
+    forces = compute_force(object1, object2)
+
+    @test norm(forces.F_AB - [0.012750, -0.444069, 0.025010]) < 1e-6
+    @test norm(forces.F_AB + forces.F_BA) < 1e-12
 end
 
 @testset "icosphere volume" begin

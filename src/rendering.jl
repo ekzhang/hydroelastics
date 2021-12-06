@@ -2,8 +2,8 @@
 Transform an object into a format that is accepted by MeshCat.
 """
 function render_obj(obj::Object)::MeshFileGeometry
-    points = [(obj.pose*[v; 1])[1:3] for v in eachcol(obj.mesh.verts)]
-    lines = ["v " * join(p, " ") for p in points]
+    points = transform(obj.mesh.verts, obj.pose)
+    lines = ["v " * join(p, " ") for p in eachcol(points)]
     for (a, b, c, d) in eachcol(obj.mesh.tets)
         for (x, y, z) in [(a, b, c), (b, c, d), (c, d, a), (d, a, b)]
             # Only include faces with potential 1, to get the outer surface.
