@@ -87,6 +87,31 @@ function intersect_halfplanes(halfplanes::Vector{HalfPlane})
     hcat([vec(isect(dq[i], dq[mod1(i + 1, len)])) for i = 1:len]...)
 end
 
+function intersect_halfplanes_slow(s::Vector{HalfPlane})
+    # s is a vector of half planes in two dimensions. 
+    A = zeros(Float64, (length(s), 2))
+    b = Vector{Float64}(undef, length(s))
+    ones = BitSet()
+    #plib = getlibraryfor(2, Float64)
+    sign = 1.0
+
+    for i = 1:length(s)
+        # maybe we need to flip all the signs here? 
+        A[i, 1] = sign * s[i].pq[2]
+        A[i, 2] = sign * -s[i].pq[1]
+        b[i] = sign * (s[i].p[1] * s[i].pq[2] - s[i].p[2] * s[i].pq[1])
+        #b = hcat([b, ]) #maybe flip signs.
+        #push!(hlist, HalfSpace([-s[i].pq[2], s[i].pq[1]], -s[i].p[1] * s[i].pq[2] + s[i].p[2] * s[i].pq[1])) # maybe need to flip a sign here. 
+    end
+    println("A: ", A)
+    println("b: ", b)
+    poly = polyhedron(hrep(A, b, ones))
+    res = hcat(Polyhedra.points(vrep(poly))...)
+    if length(res) == 0
+        return nothing
+    end
+    res
+end
 """
 Returns the equi-pressure intersection between two tetrahedra as a polygon, as
 well as the normal vector to the plane of intersection.
@@ -121,7 +146,12 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
     # Check if the tets actually intersect with the plane.
     values_A = plane[1:3]' * coords_A .+ plane[4]
     values_B = plane[1:3]' * coords_B .+ plane[4]
-    if !(minimum(values_A) < -1e-6 && maximum(values_A) > 1e-6 && minimum(values_B) < -1e-6 && maximum(values_B) > 1e-6)
+    if !(
+        minimum(values_A) < -1e-6 &&
+        maximum(values_A) > 1e-6 &&
+        minimum(values_B) < -1e-6 &&
+        maximum(values_B) > 1e-6
+    )
         return nothing
     end
 
@@ -155,7 +185,8 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
             halfspace = get_equation(coords, potentials)
             normal_2d = (halfspace[1:3]' * inv_proj_mat)'
             if norm(normal_2d) > 1e-9
-                p = normal_2d * (-halfspace[4] - halfspace[1:3]' * inv_proj_offset) /
+                p =
+                    normal_2d * (-halfspace[4] - halfspace[1:3]' * inv_proj_offset) /
                     dot(normal_2d, normal_2d)
                 pq = normalize(Point(normal_2d[2], -normal_2d[1]))
                 push!(halfplanes, HalfPlane(Point(p), pq))
@@ -163,21 +194,23 @@ function intersect_tets(o1::Object, o2::Object, a_face_idx::Int64, b_face_idx::I
         end
     end
 
-    all_points = intersect_halfplanes(halfplanes)
+    all_points = intersect_halfplanes_slow(halfplanes)
+    println("all_points", all_points)
     if isnothing(all_points)
         return nothing
     end
 
-    for p in eachcol(all_points)
-        for hp in halfplanes
-            if out(hp, p)
-                println("Halfplanes: ", halfplanes)
-                println(hp)
-                println(p)
-                error("bad!!")
-            end
-        end
-    end
+    # for p in eachcol(all_points)
+    #     print(p)
+    #     for hp in halfplanes
+    #         if out(hp, p)
+    #             println("Halfplanes: ", halfplanes)
+    #             println(hp)
+    #             println(p)
+    #             #error("bad!!")
+    #         end
+    #     end
+    # end
 
     @assert size(all_points, 2) >= 3 "sanity check length"
     hcat([inv_proj_mat * p + inv_proj_offset for p in eachcol(all_points)]...), plane[1:3]
@@ -187,18 +220,24 @@ function intersect_polygons(polygonA::Matrix{Float64}, polygonB::Matrix{Float64}
     n, m = size(polygonA, 2), size(polygonB, 2)
     halfplanes::Array{HalfPlane} = []
     for i = 1:n
-        push!(halfplanes, HalfPlane(
-            Point(polygonA[:, i]),
-            Point(polygonA[:, mod1(i + 1, n)]) - Point(polygonA[:, i]),
-        ))
+        push!(
+            halfplanes,
+            HalfPlane(
+                Point(polygonA[:, i]),
+                Point(polygonA[:, mod1(i + 1, n)]) - Point(polygonA[:, i]),
+            ),
+        )
     end
     for i = 1:m
-        push!(halfplanes, HalfPlane(
-            Point(polygonB[:, i]),
-            Point(polygonB[:, mod1(i + 1, m)]) - Point(polygonB[:, i]),
-        ))
+        push!(
+            halfplanes,
+            HalfPlane(
+                Point(polygonB[:, i]),
+                Point(polygonB[:, mod1(i + 1, m)]) - Point(polygonB[:, i]),
+            ),
+        )
     end
-    intersect_halfplanes(halfplanes)
+    intersect_halfplanes_slow(halfplanes)
 end
 
 """
