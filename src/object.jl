@@ -140,16 +140,16 @@ const Pose = SMatrix{4,4,Float64}
 struct Object
     mesh::Mesh
     pose::Pose
-    ω::SVector{3,Float64}
     v::SVector{3,Float64}
+    ω::SVector{3,Float64}
 
     """Construct a new object from a mesh, with optional pose and velocities."""
     Object(
         mesh::Mesh,
         pose::Pose = Pose(I),
-        ω::SVector{3,Float64} = (@SVector zeros(3)),
         v::SVector{3,Float64} = (@SVector zeros(3)),
-    ) = new(mesh, pose, ω, v)
+        ω::SVector{3,Float64} = (@SVector zeros(3)),
+    ) = new(mesh, pose, v, ω)
 end
 
 """Compute the volume of an object."""
@@ -159,7 +159,7 @@ end
 
 """Applies transform to an object."""
 function transform(obj::Object, matrix::Pose)::Object
-    Object(obj.mesh, matrix * obj.pose, obj.ω, obj.v)
+    Object(obj.mesh, matrix * obj.pose, obj.v, obj.ω)
 end
 
 """
@@ -223,6 +223,9 @@ Uses the exponential map on SO(3), see https://arwilliams.github.io/so3-exp.pdf.
 """
 function changeRotation(obj::Object, ω::SVector{3,Float64})::Object
     θ = norm(ω)
+    if θ < 1e-12
+        return obj
+    end
 
     # Compute the skew matrix.
     ωx = @SMatrix [

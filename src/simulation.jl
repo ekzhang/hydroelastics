@@ -22,14 +22,14 @@ function simulate(
         # Hydroelastic computations for each pair of objects
         a = Dict(id => @SVector zeros(3) for id in ids)
         α = Dict(id => @SVector zeros(3) for id in ids)
-        for i = 1:len(ids)
-            for j = i+1:len(ids)
+        for i = 1:length(ids)
+            for j = i+1:length(ids)
                 u, v = ids[i], ids[j]
                 results = compute_force(last(objects[u]), last(objects[v]))
-                a[u] += results.F_AB
-                a[v] += results.F_BA
-                α[u] += results.τ_AB
-                α[v] += results.τ_BA
+                a[u] += 100.0 * results.F_AB
+                a[v] += 100.0 * results.F_BA
+                α[u] += 100.0 * results.τ_AB
+                α[v] += 100.0 * results.τ_BA
             end
         end
 
@@ -39,7 +39,7 @@ function simulate(
         # Semi-implicit Euler integration
         for id in ids
             obj = last(objects[id])
-            obj = Object(obj.mesh, obj.pose, obj.v + dt * a, obj.ω + dt * α)
+            obj = Object(obj.mesh, obj.pose, obj.v .+ dt .* a[id], obj.ω .+ dt .* α[id])
             obj = translate(obj, dt * obj.v)
             obj = changeRotation(obj, dt * obj.ω)
             push!(objects[id], obj)

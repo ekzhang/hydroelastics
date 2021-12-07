@@ -322,7 +322,7 @@ function compute_force(A::Object, B::Object)::ForceResult
             if !isnothing(tets_result)
                 force += tets_result[1]
                 τ_AB += cross(tets_result[2] - A.mesh.com, tets_result[1])
-                τ_BA += cross(tets_result[2] - B.mesh.com, tets_result[1])
+                τ_BA += cross(tets_result[2] - B.mesh.com, -tets_result[1])
             end
         end
     end
