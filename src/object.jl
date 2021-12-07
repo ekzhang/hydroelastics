@@ -68,7 +68,7 @@ struct Mesh
             )
             SI.insert!(rtree, rect, i)
         end
-        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree), 1.0, 1.0)
+        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree))
     end
 end
 
