@@ -36,10 +36,14 @@ just test
 
 ## Development
 
-We use [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl) to automatically format Python code. To format all of the files in the project, you can run the command:
+We use [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl) to automatically format Julia code. To format all of the files in the project, you can run the command:
 
 ```bash
 just format
 ```
 
 Note that there is a CI job that automatically checks formatting and test cases before pull requests can be merged.
+
+## Acknowledgements
+
+Made by [Vincent Huang](https://twitter.com/vvhuang_), [Franklyn Wang](https://twitter.com/franklyn_wang), and [Eric Zhang](https://twitter.com/ekzhang1). Licensed under the [MIT license](LICENSE).
