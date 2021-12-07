@@ -15,5 +15,6 @@ include("object.jl")
 include("shapes.jl")
 include("rendering.jl")
 include("forces.jl")
+include("simulation.jl")
 
 end

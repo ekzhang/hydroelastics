@@ -1,6 +1,10 @@
 # Hydroelastics.jl
 
-This repository contains code for a contact force simulator for soft objects, using a hydroelastic intersection model.
+This repository contains code for a contact force simulator for soft objects, using a hydroelastic pressure field intersection model.
+
+<p align="center">
+  <img src="https://i.imgur.com/g54zdzJ.gif" width="720">
+</p>
 
 The simulator is differentiable and implemented using the [Julia](https://julialang.org/) programming language.
 
@@ -8,7 +12,7 @@ The simulator is differentiable and implemented using the [Julia](https://julial
 
 The following requirements must be present in your environment.
 
-- [Julia 1.6+](https://julialang.org/)
+- [Julia 1.7+](https://julialang.org/)
 - [Just](https://github.com/casey/just): a command runner
 
 Then, run the following command to instantiate the Julia package environment.

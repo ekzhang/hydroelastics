@@ -117,7 +117,7 @@ end
         reshape([1, 2, 3, 4], :, 1),
         [0.0, 0.0, 0.0, 1.0],
     )
-    obj = Object(tet, @SMatrix [
+    obj = Object(tet, @SMatrix Float64[
         1 0 0 1
         0 1 0 1
         0 0 1 1
