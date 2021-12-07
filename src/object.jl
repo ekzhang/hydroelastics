@@ -135,35 +135,21 @@ function bounding_box(points::Matrix{Float64})
     min.(eachcol(points)...), max.(eachcol(points)...)
 end
 
+const Pose = SMatrix{4,4,Float64}
+
 struct Object
     mesh::Mesh
-    pose::SMatrix{4,4}
-    ω::SVector{Float64,3}
-    v::SVector{Float64,3}
+    pose::Pose
+    ω::SVector{3,Float64}
+    v::SVector{3,Float64}
 
-
-    """Construct a new object from a mesh, with default pose."""
-    Object(mesh::Mesh) = new(
-        mesh,
-        @SMatrix [
-            1 0 0 0
-            0 1 0 0
-            0 0 1 0
-            0 0 0 1
-        ], @SVector [
-            0
-            0
-            0
-        ], @SVector [
-            0
-            0
-            0
-        ]
-    )
-
-    """Construct a new object from a mesh, with a specified pose."""
-    Object(mesh::Mesh, pose::SMatrix{4,4}, ω::SVector{Float64,3}, v::SVector{Float64,3}) =
-        new(mesh, pose, ω, v)
+    """Construct a new object from a mesh, with optional pose and velocities."""
+    Object(
+        mesh::Mesh,
+        pose::Pose = Pose(I),
+        ω::SVector{3,Float64} = (@SVector zeros(3)),
+        v::SVector{3,Float64} = (@SVector zeros(3)),
+    ) = new(mesh, pose, ω, v)
 end
 
 """Compute the volume of an object."""
@@ -172,14 +158,14 @@ function volume(obj::Object)
 end
 
 """Applies transform to an object."""
-function transform(obj::Object, matrix::SMatrix{4,4})::Object
+function transform(obj::Object, matrix::Pose)::Object
     Object(obj.mesh, matrix * obj.pose, obj.ω, obj.v)
 end
 
 """
 Applies transform to vertices.
 """
-function transform(vertices::Matrix{Float64}, matrix::SMatrix{4,4})
+function transform(vertices::Matrix{Float64}, matrix::Pose)
     # concatenate ones to vertices
     ones_arr = ones(1, size(vertices, 2))
     mat = vcat(vertices, ones_arr)
@@ -190,7 +176,7 @@ end
 """
 Applies transform to a single vertex.
 """
-function transform(vertex::Vector{Float64}, matrix::SMatrix{4,4})
+function transform(vertex::Vector{Float64}, matrix::Pose)
     return (matrix*[vertex; 1.0])[1:3]
 end
 
@@ -203,55 +189,52 @@ function translate(obj::Object, disp::SVector{3})::Object
     ])
 end
 
-function rotateX(obj::Object, angle::Float64)::Object
-    transform(
-        obj,
-        @SMatrix [
-            1 0 0 0
-            0 cos(angle) -sin(angle) 0
-            0 sin(angle) cos(angle) 0
-            0 0 0 1
-        ]
-    )
+function rotateX(obj::Object, θ::Float64)::Object
+    transform(obj, @SMatrix [
+        1 0 0 0
+        0 cos(θ) -sin(θ) 0
+        0 sin(θ) cos(θ) 0
+        0 0 0 1
+    ])
 end
 
-function rotateY(obj::Object, angle::Float64)::Object
-    transform(
-        obj,
-        @SMatrix [
-            cos(angle) 0 sin(angle) 0
-            0 1 0 0
-            -sin(angle) 0 cos(angle) 0
-            0 0 0 1
-        ]
-    )
+function rotateY(obj::Object, θ::Float64)::Object
+    transform(obj, @SMatrix [
+        cos(θ) 0 sin(θ) 0
+        0 1 0 0
+        -sin(θ) 0 cos(θ) 0
+        0 0 0 1
+    ])
 end
 
-function rotateZ(obj::Object, angle::Float64)::Object
-    transform(
-        obj,
-        @SMatrix [
-            cos(angle) -sin(angle) 0 0
-            sin(angle) cos(angle) 0 0
-            0 0 1 0
-            0 0 0 1
-        ]
-    )
+function rotateZ(obj::Object, θ::Float64)::Object
+    transform(obj, @SMatrix [
+        cos(θ) -sin(θ) 0 0
+        sin(θ) cos(θ) 0 0
+        0 0 1 0
+        0 0 0 1
+    ])
 end
 
-function changeRotation(obj::Object, ω::Vector{Float64,3})::Object
-    rot_matrix = expm([[0, -ω[3], ω[2]], [ω[3], 0, -ω[1]], [-ω[2], ω[1], 0]])
+"""
+Updates the current object's pose according to an angular velocity.
 
-    transform(
-        obj,
-        @SMatrix [
-            rot_matrix[1, 1] rot_matrix[1, 2] rot_matrix[1, 3] 0
-            rot_matrix[2, 1] rot_matrix[2, 2] rot_matrix[2, 3] 0
-            rot_matrix[3, 1] rot_matrix[3, 2] rot_matrix[3, 3] 0
-            0, 0, 0, 1
-        ]
-    )
-    # TODO: change the rotation matrix based on angular velocity ω
+Uses the exponential map on SO(3), see https://arwilliams.github.io/so3-exp.pdf.
+"""
+function changeRotation(obj::Object, ω::SVector{3,Float64})::Object
+    θ = norm(ω)
+
+    # Compute the skew matrix.
+    ωx = @SMatrix [
+        0 -ω[3] ω[2]
+        ω[3] 0 -ω[1]
+        -ω[2] ω[1] 0
+    ]
+
+    # Compute the matrix exponential / exponential map.
+    ω_exp = I + (sin(θ) / θ) .* ωx + ((1 - cos(θ)) / θ^2) .* (ωx * ωx)
+    transform(obj, Pose([ω_exp zeros(3); zeros(3)' 1]))
 end
 
-export Mesh, Object, volume, transform, translate, rotateX, rotateY, rotateZ, changeRotation
+export Mesh,
+    Pose, Object, volume, transform, translate, rotateX, rotateY, rotateZ, changeRotation

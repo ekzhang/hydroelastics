@@ -1,4 +1,4 @@
-const Point = SVector{2}
+const Point = SVector{2,Float64}
 
 struct HalfPlane
     p::Point
@@ -237,10 +237,10 @@ end
 Result of a force calculation, expressed as vectors in the world frame.
 """
 struct ForceResult
-    F_AB::SVector{3} # The force applied to object A from B.
-    F_BA::SVector{3} # The force applied to object B from A.
-    τ_AB::SVector{3} # The torque applied to object A from B.
-    τ_BA::SVector{3} # The torque applied to object B from A.
+    F_AB::SVector{3,Float64} # The force applied to object A from B.
+    F_BA::SVector{3,Float64} # The force applied to object B from A.
+    τ_AB::SVector{3,Float64} # The torque applied to object A from B.
+    τ_BA::SVector{3,Float64} # The torque applied to object B from A.
 end
 
 """

@@ -8,7 +8,7 @@ The simulator is differentiable and implemented using the [Julia](https://julial
 
 The following requirements must be present in your environment.
 
-- [Julia 1.6+](https://julialang.org/)
+- [Julia 1.7+](https://julialang.org/)
 - [Just](https://github.com/casey/just): a command runner
 
 Then, run the following command to instantiate the Julia package environment.
