@@ -48,6 +48,8 @@ struct Mesh
     potentials::Vector{Float64} # shape: [n]
     com::Vector{Float64} # center of mass
     rtree::RTreeWrapper # bounding box index data structure
+    mass::Float64 # mass
+    inertia::Float64 # assuming inertia is a scalar and not a tensor
 
     Mesh(verts::Matrix{Float64}, tets::Matrix{Int64}, potentials::Vector{Float64}) = begin
         @assert(size(verts, 1) == 3, "verts should be in R3")
@@ -68,7 +70,35 @@ struct Mesh
             )
             SI.insert!(rtree, rect, i)
         end
-        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree))
+        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree), 1.0, 1.0)
+    end
+
+    Mesh(
+        verts::Matrix{Float64},
+        tets::Matrix{Int64},
+        potentials::Vector{Float64},
+        mass::Float64,
+        inertia::Float64,
+    ) = begin
+        @assert(size(verts, 1) == 3, "verts should be in R3")
+        @assert(size(tets, 1) == 4, "tets should be 4-tuples of indices")
+        @assert(
+            size(potentials, 1) == size(verts, 2),
+            "potentials should be the same size as verts"
+        )
+        n, m = size(verts, 2), size(tets, 2)
+        com = center_of_mass(verts, tets)
+        rtree = RTree{Float64,3}(Int64)
+        for i = 1:m
+            points = verts[:, tets[:, i]]
+            bb_min, bb_max = bounding_box(points)
+            rect = SI.Rect(
+                (bb_min[1], bb_min[2], bb_min[3]),
+                (bb_max[1], bb_max[2], bb_max[3]),
+            )
+            SI.insert!(rtree, rect, i)
+        end
+        new(n, m, verts, tets, potentials, com, RTreeWrapper(rtree), mass, inertia)
     end
 end
 
@@ -108,17 +138,32 @@ end
 struct Object
     mesh::Mesh
     pose::SMatrix{4,4}
+    ω::SVector{Float64,3}
+    v::SVector{Float64,3}
+
 
     """Construct a new object from a mesh, with default pose."""
-    Object(mesh::Mesh) = new(mesh, @SMatrix [
-        1 0 0 0
-        0 1 0 0
-        0 0 1 0
-        0 0 0 1
-    ])
+    Object(mesh::Mesh) = new(
+        mesh,
+        @SMatrix [
+            1 0 0 0
+            0 1 0 0
+            0 0 1 0
+            0 0 0 1
+        ], @SVector [
+            0
+            0
+            0
+        ], @SVector [
+            0
+            0
+            0
+        ]
+    )
 
     """Construct a new object from a mesh, with a specified pose."""
-    Object(mesh::Mesh, pose::SMatrix{4,4}) = new(mesh, pose)
+    Object(mesh::Mesh, pose::SMatrix{4,4}, ω::SVector{Float64,3}, v::SVector{Float64,3}) =
+        new(mesh, pose, ω, v)
 end
 
 """Compute the volume of an object."""
@@ -128,7 +173,7 @@ end
 
 """Applies transform to an object."""
 function transform(obj::Object, matrix::SMatrix{4,4})::Object
-    Object(obj.mesh, matrix * obj.pose)
+    Object(obj.mesh, matrix * obj.pose, obj.ω, obj.v)
 end
 
 """
@@ -192,6 +237,11 @@ function rotateZ(obj::Object, angle::Float64)::Object
             0 0 0 1
         ]
     )
+end
+
+function changeRotation(obj::Object, ω)
+    # TODO: change the rotation matrix based on angular velocity ω
+    obj
 end
 
 export Mesh, Object, volume, transform, translate, rotateX, rotateY, rotateZ
