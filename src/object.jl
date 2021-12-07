@@ -242,7 +242,8 @@ end
 function changeRotation(obj::Object, ω::Vector{Float64,3})::Object
     rot_matrix = expm([[0, -ω[3], ω[2]], [ω[3], 0, -ω[1]], [-ω[2], ω[1], 0]])
 
-    transform(obj,
+    transform(
+        obj,
         @SMatrix [
             rot_matrix[1, 1] rot_matrix[1, 2] rot_matrix[1, 3] 0
             rot_matrix[2, 1] rot_matrix[2, 2] rot_matrix[2, 3] 0
