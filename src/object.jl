@@ -239,9 +239,18 @@ function rotateZ(obj::Object, angle::Float64)::Object
     )
 end
 
-function changeRotation(obj::Object, ω)
+function changeRotation(obj::Object, ω::Vector{Float64,3})::Object
+    rot_matrix = expm([[0, -ω[3], ω[2]], [ω[3], 0, -ω[1]], [-ω[2], ω[1], 0]])
+
+    transform(obj,
+        @SMatrix [
+            rot_matrix[1, 1] rot_matrix[1, 2] rot_matrix[1, 3] 0
+            rot_matrix[2, 1] rot_matrix[2, 2] rot_matrix[2, 3] 0
+            rot_matrix[3, 1] rot_matrix[3, 2] rot_matrix[3, 3] 0
+            0, 0, 0, 1
+        ]
+    )
     # TODO: change the rotation matrix based on angular velocity ω
-    obj
 end
 
-export Mesh, Object, volume, transform, translate, rotateX, rotateY, rotateZ
+export Mesh, Object, volume, transform, translate, rotateX, rotateY, rotateZ, changeRotation
