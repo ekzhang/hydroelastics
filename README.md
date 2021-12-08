@@ -6,7 +6,7 @@ This repository contains code for a contact force simulator for soft objects, us
   <img src="https://i.imgur.com/g54zdzJ.gif" width="720">
 </p>
 
-The simulator is differentiable and implemented using the [Julia](https://julialang.org/) programming language.
+The simulator is implemented using the [Julia](https://julialang.org/) programming language.
 
 ## Setup
 
